@@ -42,6 +42,12 @@
     "require-dev": {
         "phpunit/phpunit": "^9.6 || ^10.5 || ^12.0"
     },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "magento/composer-dependency-version-audit-plugin": false
+        }
+    },
     "autoload": {
         "files": [
             "registration.php"
@@ -64,6 +70,7 @@
             "/.gitattributes",
             "/.gitignore",
             "/.idea",
+            "/.phpcs.xml.dist",
             "/.phpunit.cache",
             "/.phpunit.result.cache",
             "/.vscode",

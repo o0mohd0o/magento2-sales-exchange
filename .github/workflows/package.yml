@@ -116,7 +116,7 @@ jobs:
           listing="$RUNNER_TEMP/sales-exchange-archive-contents.txt"
           unzip -Z1 "$archive" > "$listing"
           if grep -Eq \
-            '(^|/)(\.github|Test|dev)(/|$)|(^|/)(\.gitattributes|\.gitignore)$' \
+            '(^|/)(\.github|Test|dev)(/|$)|(^|/)(\.gitattributes|\.gitignore|\.phpcs\.xml\.dist)$' \
             "$listing"; then
             echo "Development-only content leaked into the distribution archive."
             exit 1
