@@ -17,6 +17,12 @@
             "role": "Developer"
         }
     ],
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://mirror.mage-os.org/"
+        }
+    ],
     "require": {
         "php": "~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0",
         "ext-bcmath": "*",
@@ -67,6 +73,7 @@
             "/composer.lock",
             "/coverage",
             "/dev",
+            "/docs",
             "/vendor"
         ]
     }

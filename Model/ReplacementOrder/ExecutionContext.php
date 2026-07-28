@@ -10,13 +10,12 @@ namespace Bonlineco\SalesExchange\Model\ReplacementOrder;
 
 use Bonlineco\SalesExchange\Exception\InvariantViolationException;
 use Magento\Framework\Model\AbstractModel;
-use Magento\Framework\ObjectManager\ResetAfterRequestInterface;
 use Magento\Quote\Api\Data\CartInterface;
 
 /**
  * In-process proof that one exact quote belongs to a replacement-order intent.
  */
-class ExecutionContext implements ResetAfterRequestInterface
+class ExecutionContext
 {
     private const INTENT_HASH_PATTERN = '/^[a-f0-9]{64}$/D';
 
