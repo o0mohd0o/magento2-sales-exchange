@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+-->
+<sections xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="urn:magento:mftf:Page/etc/SectionObject.xsd">
+    <section name="AdminSalesExchangeGridSection">
+        <element name="loadingMask"
+                 type="block"
+                 selector=".admin__data-grid-loading-mask"/>
+        <element name="grid"
+                 type="block"
+                 selector="div[data-role='grid-wrapper']"
+                 timeout="30"/>
+        <element name="columnHeader"
+                 type="text"
+                 selector="//div[@data-role='grid-wrapper']//th[contains(@class, 'data-grid-th')]/span[normalize-space(.)='{{label}}']"
+                 parameterized="true"
+                 timeout="30"/>
+    </section>
+</sections>

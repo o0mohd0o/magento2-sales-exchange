@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+-->
+<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="urn:magento:mftf:DataGenerator/etc/dataProfileSchema.xsd">
+    <entity name="SalesExchangeNoAccessRole" type="user_role">
+        <data key="name" unique="suffix">SalesExchangeNoAccess</data>
+        <data key="rolename" unique="suffix">SalesExchangeNoAccess</data>
+        <data key="current_password">{{_ENV.MAGENTO_ADMIN_PASSWORD}}</data>
+        <data key="all">0</data>
+        <data key="gws_is_all">0</data>
+        <array key="gws_websites">
+            <item>1</item>
+        </array>
+        <array key="resource">
+            <item>Magento_Backend::dashboard</item>
+            <item>Magento_Sales::sales</item>
+            <item>Magento_Sales::sales_operation</item>
+        </array>
+    </entity>
+    <entity name="SalesExchangeRestrictedAdminUser"
+            type="user"
+            extends="NewAdminUser">
+        <data key="username" unique="suffix">sales_exchange_restricted</data>
+        <data key="email" unique="prefix">sales-exchange-restricted@example.com</data>
+    </entity>
+</entities>

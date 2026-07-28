@@ -1,0 +1,220 @@
+{
+    "bonlineco_sales_exchange": {
+        "column": {
+            "entity_id": true,
+            "increment_id": true,
+            "original_order_id": true,
+            "store_id": true,
+            "customer_id": true,
+            "currency_code": true,
+            "base_currency_code": true,
+            "exchange_status": true,
+            "return_status": true,
+            "replacement_status": true,
+            "settlement_status": true,
+            "return_credit_amount": true,
+            "native_return_credit_amount": true,
+            "base_native_return_credit_amount": true,
+            "native_replacement_amount": true,
+            "base_native_replacement_amount": true,
+            "replacement_amount": true,
+            "shipping_amount": true,
+            "fee_amount": true,
+            "balance_amount": true,
+            "customer_note": true,
+            "internal_note": true,
+            "version": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "BONLINECO_SALES_EXCHANGE_ORIGINAL_ORDER_ID": true,
+            "BONLINECO_SALES_EXCHANGE_CUSTOMER_ID": true,
+            "BONLINECO_SALES_EXCHANGE_EXCHANGE_STATUS": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "BONLINECO_SALES_EXCHANGE_INCREMENT_ID": true,
+            "BONLINECO_SALES_EXCHANGE_ORIGINAL_ORDER_ID_SALES_ORDER_ENTITY_ID": true
+        }
+    },
+    "quote": {
+        "column": {
+            "bonlineco_exchange_id": true,
+            "bonlineco_exchange_intent_hash": true
+        },
+        "constraint": {
+            "QUOTE_BONLINECO_EXCHANGE_ID": true,
+            "QUOTE_BONLINECO_EXCHANGE_INTENT_HASH": true
+        }
+    },
+    "quote_item": {
+        "column": {
+            "bonlineco_exchange_replacement_item_id": true
+        },
+        "constraint": {
+            "QUOTE_ITEM_BONLINECO_EXCHANGE_REPLACEMENT_ITEM_ID": true
+        }
+    },
+    "sales_order": {
+        "column": {
+            "bonlineco_exchange_id": true,
+            "bonlineco_exchange_intent_hash": true
+        },
+        "constraint": {
+            "SALES_ORDER_BONLINECO_EXCHANGE_ID": true,
+            "SALES_ORDER_BONLINECO_EXCHANGE_INTENT_HASH": true
+        }
+    },
+    "sales_order_item": {
+        "column": {
+            "bonlineco_exchange_replacement_item_id": true
+        },
+        "constraint": {
+            "SALES_ORDER_ITEM_BONLINECO_EXCHANGE_REPLACEMENT_ITEM_ID": true
+        }
+    },
+    "bonlineco_sales_exchange_allocation_guard": {
+        "column": {
+            "order_item_id": true,
+            "created_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "FK_A00138AF44F1C43CCFDA54651A509C83": true
+        }
+    },
+    "bonlineco_sales_exchange_return_item": {
+        "column": {
+            "entity_id": true,
+            "exchange_id": true,
+            "order_item_id": true,
+            "sku": true,
+            "name": true,
+            "requested_qty": true,
+            "allocated_qty": true,
+            "received_qty": true,
+            "receipt_resolved": true,
+            "accepted_qty": true,
+            "credited_qty": true,
+            "rejected_qty": true,
+            "unit_credit_amount": true,
+            "row_credit_amount": true,
+            "reason_code": true,
+            "condition_code": true,
+            "disposition": true,
+            "version": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "BONLINECO_SALES_EXCHANGE_RETURN_ITEM_ORDER_ITEM_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "BONLINECO_SALES_EXCHANGE_RETURN_ITEM_EXCHANGE_ID_ORDER_ITEM_ID": true,
+            "FK_D054A7374DF5D9C601C5C0D921FA1190": true,
+            "FK_9A18F34528C70AADCF79C869A262C7E1": true
+        }
+    },
+    "bonlineco_sales_exchange_replacement_item": {
+        "column": {
+            "entity_id": true,
+            "exchange_id": true,
+            "product_id": true,
+            "sku": true,
+            "name": true,
+            "qty": true,
+            "unit_price_amount": true,
+            "row_total_amount": true,
+            "product_options_json": true,
+            "replacement_order_item_id": true,
+            "version": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "BONLINECO_SALES_EXCHANGE_REPLACEMENT_ITEM_EXCHANGE_ID": true,
+            "BONLINECO_SALES_EXCHANGE_REPLACEMENT_ITEM_PRODUCT_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "FK_4B6DDD6D872ED161B678B1CDE6E35FEA": true,
+            "FK_4121BDF098F506DAB55A90BB3ED0CAF8": true
+        }
+    },
+    "bonlineco_sales_exchange_settlement": {
+        "column": {
+            "entity_id": true,
+            "exchange_id": true,
+            "type": true,
+            "status": true,
+            "amount": true,
+            "currency_code": true,
+            "idempotency_key": true,
+            "external_reference": true,
+            "comment": true,
+            "version": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "BONLINECO_SALES_EXCHANGE_SETTLEMENT_EXCHANGE_ID": true,
+            "BONLINECO_SALES_EXCHANGE_SETTLEMENT_STATUS": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "BONLINECO_SALES_EXCHANGE_SETTLEMENT_IDEMPOTENCY_KEY": true,
+            "FK_6BA0D8B27B633004ADAC35DE736BE488": true
+        }
+    },
+    "bonlineco_sales_exchange_document_link": {
+        "column": {
+            "entity_id": true,
+            "exchange_id": true,
+            "document_type": true,
+            "document_id": true,
+            "increment_id": true,
+            "operation_key": true,
+            "item_quantities_json": true,
+            "snapshot_hash": true,
+            "amount": true,
+            "expected_amount": true,
+            "base_amount": true,
+            "currency_code": true,
+            "base_currency_code": true,
+            "document_status": true,
+            "created_at": true
+        },
+        "index": {
+            "BONLINECO_SALES_EXCHANGE_DOCUMENT_LINK_EXCHANGE_ID_DOCUMENT_TYPE": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "BONLINECO_SALES_EXCHANGE_DOCUMENT_LINK_OPERATION_KEY": true,
+            "BONLINECO_SALES_EXCHANGE_DOCUMENT_LINK_DOCUMENT_TYPE_DOCUMENT_ID": true,
+            "FK_2E9ACBA07C783AD86183A3B2A87D72BB": true
+        }
+    },
+    "bonlineco_sales_exchange_history": {
+        "column": {
+            "entity_id": true,
+            "exchange_id": true,
+            "action": true,
+            "status_dimension": true,
+            "from_value": true,
+            "to_value": true,
+            "actor_type": true,
+            "actor_id": true,
+            "comment": true,
+            "created_at": true
+        },
+        "index": {
+            "BONLINECO_SALES_EXCHANGE_HISTORY_EXCHANGE_ID_CREATED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "FK_5A9AF5ADEE2802E4ABC7094C1B09EA8D": true
+        }
+    }
+}

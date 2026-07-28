@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="sales_exchange" translate="label" type="text" sortOrder="710"
+                 showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>Sales Exchanges</label>
+            <tab>sales</tab>
+            <resource>Bonlineco_SalesExchange::config</resource>
+            <group id="general" translate="label" type="text" sortOrder="10"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>General Configuration</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Sales Exchanges</label>
+                    <comment>When disabled, new exchange actions are hidden. Existing cases remain viewable.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="window_days" translate="label comment" type="text" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Exchange Window (Days)</label>
+                    <comment>Counted from the original order creation time. Set a positive whole number.</comment>
+                    <validate>required-entry validate-digits validate-greater-than-zero</validate>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="eligible_order_statuses" translate="label comment" type="multiselect"
+                       sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Eligible Order Statuses</label>
+                    <comment>Only orders in one of these statuses can start a new exchange.</comment>
+                    <source_model>Magento\Sales\Model\Config\Source\Order\Status</source_model>
+                    <can_be_empty>0</can_be_empty>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="allowed_reasons" translate="label comment" type="multiselect"
+                       sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Allowed Return Reasons</label>
+                    <comment>Reason codes are stable for integrations; labels are translated.</comment>
+                    <source_model>Bonlineco\SalesExchange\Model\Config\Source\Reason</source_model>
+                    <can_be_empty>0</can_be_empty>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

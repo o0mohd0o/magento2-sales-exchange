@@ -1,0 +1,40 @@
+<?php
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ *
+ * @var \Bonlineco\SalesExchange\Block\Adminhtml\Order\Exchanges $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+
+$exchanges = $block->getExchanges();
+?>
+<?php if ($exchanges !== [] || $block->canCreate()): ?>
+    <section class="admin__page-section salesexchange-order-links"
+             aria-labelledby="salesexchange-order-links-title">
+        <div class="admin__page-section-title">
+            <span class="title" id="salesexchange-order-links-title">
+                <?= $escaper->escapeHtml(__('Exchange Orders')) ?>
+            </span>
+        </div>
+        <div class="admin__page-section-content">
+            <?php if ($exchanges === []): ?>
+                <p><?= $escaper->escapeHtml(__('No exchange cases have been created for this order.')) ?></p>
+            <?php else: ?>
+                <ul class="salesexchange-order-links__list">
+                    <?php foreach ($exchanges as $exchange): ?>
+                        <li>
+                            <a href="<?= $escaper->escapeUrl($block->getViewUrl($exchange)) ?>">
+                                <?= $escaper->escapeHtml(__('#%1', $exchange->getIncrementId())) ?>
+                            </a>
+                            <span class="salesexchange-muted">
+                                <?= $escaper->escapeHtml($block->getStatusLabel($exchange->getExchangeStatus())) ?>
+                            </span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </div>
+    </section>
+<?php endif; ?>

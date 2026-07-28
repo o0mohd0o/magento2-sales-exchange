@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <payment>
+            <bonlineco_sales_exchange>
+                <active>1</active>
+                <model>Bonlineco\SalesExchange\Model\Payment\Replacement</model>
+                <order_status>pending</order_status>
+                <title>Exchange Replacement</title>
+                <allowspecific>0</allowspecific>
+            </bonlineco_sales_exchange>
+        </payment>
+        <carriers>
+            <bonlineco_sales_exchange>
+                <active>1</active>
+                <model>Bonlineco\SalesExchange\Model\Carrier\Replacement</model>
+                <title>Exchange Replacement</title>
+                <name>Replacement Delivery</name>
+                <sallowspecific>0</sallowspecific>
+                <showmethod>0</showmethod>
+            </bonlineco_sales_exchange>
+        </carriers>
+        <sales_exchange>
+            <general>
+                <enabled>0</enabled>
+                <window_days>30</window_days>
+                <eligible_order_statuses>complete</eligible_order_statuses>
+                <allowed_reasons>wrong_item,damaged,defective,size_or_fit,changed_mind,other</allowed_reasons>
+            </general>
+        </sales_exchange>
+    </default>
+</config>

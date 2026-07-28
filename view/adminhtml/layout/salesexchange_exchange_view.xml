@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      layout="admin-1column"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Bonlineco\SalesExchange\Block\Adminhtml\Exchange\View"
+                   name="bonlineco.salesexchange.view"
+                   template="Bonlineco_SalesExchange::exchange/view.phtml"
+                   cacheable="false"/>
+        </referenceContainer>
+    </body>
+</page>

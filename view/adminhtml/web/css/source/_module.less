@@ -1,0 +1,227 @@
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+.salesexchange-view,
+.salesexchange-create {
+    display: grid;
+    gap: 2rem;
+}
+
+.salesexchange-card {
+    background: @color-white;
+    border: 1px solid @color-gray80;
+    padding: 2rem;
+}
+
+.salesexchange-card__header {
+    align-items: flex-start;
+    display: flex;
+    gap: 2rem;
+    justify-content: space-between;
+}
+
+.salesexchange-card h1,
+.salesexchange-card h2,
+.salesexchange-card h3 {
+    margin-top: 0;
+}
+
+.salesexchange-muted,
+.salesexchange-empty {
+    color: @color-gray40;
+}
+
+.salesexchange-version {
+    background: @color-gray90;
+    border-radius: 1.4rem;
+    padding: .5rem 1rem;
+    white-space: nowrap;
+}
+
+.salesexchange-metadata,
+.salesexchange-totals {
+    display: grid;
+    gap: 1.5rem 3rem;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    margin: 2rem 0 0;
+}
+
+.salesexchange-metadata > div,
+.salesexchange-totals > div {
+    margin: 0;
+}
+
+.salesexchange-metadata dt,
+.salesexchange-totals dt {
+    color: @color-gray40;
+    font-size: 1.2rem;
+    margin-bottom: .4rem;
+}
+
+.salesexchange-metadata dd,
+.salesexchange-totals dd {
+    font-size: 1.6rem;
+    font-weight: @font-weight__semibold;
+    margin: 0;
+}
+
+.salesexchange-totals__balance {
+    border-inline-start: .3rem solid @color-blue1;
+    padding-inline-start: 1.2rem;
+}
+
+.salesexchange-statuses {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+
+.salesexchange-status-card {
+    background: @color-white;
+    border: 1px solid @color-gray80;
+    display: grid;
+    gap: .8rem;
+    padding: 1.5rem;
+}
+
+.salesexchange-status-card__label {
+    color: @color-gray40;
+    font-size: 1.2rem;
+}
+
+.salesexchange-status {
+    border-radius: 1.2rem;
+    display: inline-block;
+    font-size: 1.2rem;
+    padding: .3rem .9rem;
+    width: fit-content;
+}
+
+.salesexchange-status--success {
+    background: #e8f5e9;
+    color: #256029;
+}
+
+.salesexchange-status--processing {
+    background: #e8f1fa;
+    color: #1f5f96;
+}
+
+.salesexchange-status--pending {
+    background: #fff5df;
+    color: #7b5814;
+}
+
+.salesexchange-status--error {
+    background: #fae5e5;
+    color: #9c2424;
+}
+
+.salesexchange-warehouse {
+    border-top: 1px solid @color-gray80;
+    margin-top: 2rem;
+    padding-top: 2rem;
+}
+
+.salesexchange-row-form {
+    align-items: end;
+    background: @color-gray95;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(18rem, 1fr) minmax(14rem, .5fr) auto;
+    margin-top: 1rem;
+    padding: 1.5rem;
+}
+
+.salesexchange-row-form--inspection {
+    grid-template-columns: minmax(18rem, 1fr) repeat(4, minmax(12rem, .5fr)) auto;
+}
+
+.salesexchange-row-form__identity {
+    display: grid;
+    gap: .3rem;
+}
+
+.salesexchange-row-form__actions {
+    display: flex;
+    gap: .8rem;
+}
+
+.salesexchange-settlement-form {
+    background: @color-gray95;
+    border-top: 1px solid @color-gray80;
+    margin: 2rem -2rem;
+    padding: 2rem;
+}
+
+.salesexchange-settlement-form__intro {
+    margin-top: 0;
+}
+
+.salesexchange-settlement-form__fields {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(25rem, 1fr));
+}
+
+.salesexchange-settlement-form__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+.salesexchange-notes,
+.salesexchange-create-notes {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(25rem, 1fr));
+}
+
+.salesexchange-notes p {
+    white-space: pre-wrap;
+}
+
+.salesexchange-create__toolbar,
+.salesexchange-create__actions {
+    display: flex;
+    justify-content: space-between;
+}
+
+.salesexchange-order-selector {
+    align-items: end;
+    display: flex;
+    gap: 1rem;
+    max-width: 65rem;
+}
+
+.salesexchange-order-selector .admin__field {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.salesexchange-order-snapshot__meta {
+    display: grid;
+    gap: .5rem;
+    text-align: end;
+}
+
+.salesexchange-qty-input {
+    max-width: 12rem;
+}
+
+[data-role='return-item-row']._selected {
+    background: #f2f8fd;
+}
+
+@media only screen and (max-width: 1100px) {
+    .salesexchange-row-form,
+    .salesexchange-row-form--inspection {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .salesexchange-row-form__actions {
+        grid-column: 1 / -1;
+    }
+}

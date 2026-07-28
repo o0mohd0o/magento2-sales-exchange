@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+-->
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminSalesExchangeGridSmokeTest">
+        <annotations>
+            <features value="Bonlineco Sales Exchange"/>
+            <stories value="Admin exchange-order navigation"/>
+            <title value="Admin can open the exchange-order grid"/>
+            <description value="Verify the Sales menu route and the four-dimensional exchange grid render for an authorized administrator."/>
+            <severity value="CRITICAL"/>
+            <group value="bonlineco_sales_exchange"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logout"/>
+        </after>
+
+        <actionGroup ref="AdminNavigateMenuActionGroup"
+                     stepKey="navigateToExchangeOrders">
+            <argument name="menuUiId" value="{{AdminMenuSales.dataUiId}}"/>
+            <argument name="submenuUiId"
+                      value="{{AdminMenuSalesExchangeOrders.dataUiId}}"/>
+        </actionGroup>
+        <actionGroup ref="AdminAssertPageTitleActionGroup"
+                     stepKey="seeExchangeOrdersTitle">
+            <argument name="title"
+                      value="{{AdminMenuSalesExchangeOrders.pageTitle}}"/>
+        </actionGroup>
+        <seeInCurrentUrl url="{{AdminSalesExchangeGridPage.url}}"
+                         stepKey="seeExchangeGridUrl"/>
+        <waitForElementNotVisible
+            selector="{{AdminSalesExchangeGridSection.loadingMask}}"
+            stepKey="waitForExchangeGrid"/>
+        <seeElement selector="{{AdminSalesExchangeGridSection.grid}}"
+                    stepKey="seeExchangeGrid"/>
+        <seeElement
+            selector="{{AdminSalesExchangeGridSection.columnHeader('Exchange #')}}"
+            stepKey="seeExchangeNumberColumn"/>
+        <seeElement
+            selector="{{AdminSalesExchangeGridSection.columnHeader('Replacement Status')}}"
+            stepKey="seeReplacementStatusColumn"/>
+        <seeElement
+            selector="{{AdminSalesExchangeGridSection.columnHeader('Settlement Status')}}"
+            stepKey="seeSettlementStatusColumn"/>
+    </test>
+</tests>

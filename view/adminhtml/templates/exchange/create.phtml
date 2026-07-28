@@ -1,0 +1,335 @@
+<?php
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ *
+ * @var \Bonlineco\SalesExchange\Block\Adminhtml\Exchange\Create $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+
+if (!$block->canCreate()) {
+    return;
+}
+$order = $block->getOrder();
+$selectedIncrementId = $block->getSelectedOrderIncrementId();
+?>
+<div class="salesexchange-create"
+     data-mage-init="<?= $escaper->escapeHtmlAttr($block->getCreateJsConfig()) ?>">
+    <div class="salesexchange-create__toolbar">
+        <a class="action-secondary" href="<?= $escaper->escapeUrl($block->getBackUrl()) ?>">
+            <span><?= $escaper->escapeHtml(__('Back to Exchange Orders')) ?></span>
+        </a>
+    </div>
+
+    <section class="salesexchange-card" aria-labelledby="salesexchange-order-select-title">
+        <h1 id="salesexchange-order-select-title"><?= $escaper->escapeHtml(__('Create Exchange')) ?></h1>
+        <p class="salesexchange-muted">
+            <?= $escaper->escapeHtml(
+                __('Load the original sales order first. The save handler re-validates every quantity and price.')
+            ) ?>
+        </p>
+        <form class="salesexchange-order-selector"
+              method="get"
+              action="<?= $escaper->escapeUrl($block->getOrderSelectionUrl()) ?>">
+            <div class="admin__field _required">
+                <label class="admin__field-label" for="order-increment-id">
+                    <span><?= $escaper->escapeHtml(__('Original Order Number')) ?></span>
+                </label>
+                <div class="admin__field-control">
+                    <input class="admin__control-text"
+                           id="order-increment-id"
+                           type="text"
+                           name="order_increment_id"
+                           maxlength="64"
+                           value="<?= $escaper->escapeHtmlAttr($selectedIncrementId) ?>"
+                           required>
+                </div>
+            </div>
+            <button class="action-secondary" type="submit">
+                <span><?= $escaper->escapeHtml(__('Load Order')) ?></span>
+            </button>
+        </form>
+        <?php if ($order === null && $selectedIncrementId !== ''): ?>
+            <div class="message message-error error">
+                <div>
+                    <?= $escaper->escapeHtml(
+                        __('No order with number “%1” could be loaded.', $selectedIncrementId)
+                    ) ?>
+                </div>
+            </div>
+        <?php endif; ?>
+    </section>
+
+    <?php if ($order !== null): ?>
+        <section class="salesexchange-card salesexchange-order-snapshot"
+                 aria-labelledby="salesexchange-order-snapshot-title">
+            <div class="salesexchange-card__header">
+                <div>
+                    <h2 id="salesexchange-order-snapshot-title">
+                        <?= $escaper->escapeHtml(__('Original Order #%1', $order->getIncrementId())) ?>
+                    </h2>
+                    <p class="salesexchange-muted">
+                        <?= $escaper->escapeHtml($order->getCustomerEmail() ?: __('Guest order')) ?>
+                    </p>
+                </div>
+                <div class="salesexchange-order-snapshot__meta">
+                    <span><?= $escaper->escapeHtml($block->formatDateTime($order->getCreatedAt())) ?></span>
+                    <strong><?= $escaper->escapeHtml($block->formatMoney((string)$order->getGrandTotal())) ?></strong>
+                </div>
+            </div>
+        </section>
+
+        <?php $returnableItems = $block->getReturnableItems(); ?>
+        <?php if ($returnableItems === []): ?>
+            <div class="message message-warning warning">
+                <div>
+                    <?= $escaper->escapeHtml(
+                        __('This order has no supported quantity remaining for a new exchange.')
+                    ) ?>
+                </div>
+            </div>
+        <?php else: ?>
+            <form id="salesexchange-create-form"
+                  class="salesexchange-create-form"
+                  method="post"
+                  action="<?= $escaper->escapeUrl($block->getSaveUrl()) ?>"
+                  data-mage-init="<?= $escaper->escapeHtmlAttr($block->getValidationJsConfig()) ?>">
+                <input type="hidden" name="form_key"
+                       value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
+                <input type="hidden" name="order_id"
+                       value="<?= $escaper->escapeHtmlAttr((string)$order->getEntityId()) ?>">
+
+                <section class="salesexchange-card" aria-labelledby="salesexchange-create-return-title">
+                    <h2 id="salesexchange-create-return-title"><?= $escaper->escapeHtml(__('Products to Return')) ?></h2>
+                    <p class="salesexchange-muted">
+                        <?= $escaper->escapeHtml(
+                            __('Select at least one item, its requested quantity, and the reason for return.')
+                        ) ?>
+                    </p>
+                    <div class="admin__data-grid-wrap">
+                        <table class="data-grid">
+                            <thead>
+                            <tr>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Select')) ?></th>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Product')) ?></th>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Ordered')) ?></th>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Remaining')) ?></th>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Return Quantity')) ?></th>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Reason')) ?></th>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Order Row Total')) ?></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($returnableItems as $row): ?>
+                                <?php
+                                $item = $row['item'];
+                                $itemId = (int)$item->getItemId();
+                                $formData = $block->getReturnFormData($itemId);
+                                $selected = $formData['selected'];
+                                ?>
+                                <tr data-role="return-item-row">
+                                    <td>
+                                        <input class="admin__control-checkbox"
+                                               id="return-item-<?= $escaper->escapeHtmlAttr((string)$itemId) ?>"
+                                               type="checkbox"
+                                               name="return_items[<?= $escaper->escapeHtmlAttr(
+                                                   (string)$itemId
+                                               ) ?>][selected]"
+                                               value="1"
+                                               <?= $selected ? 'checked' : '' ?>
+                                               data-role="return-item-toggle">
+                                    </td>
+                                    <td>
+                                        <label for="return-item-<?= $escaper->escapeHtmlAttr((string)$itemId) ?>">
+                                            <strong><?= $escaper->escapeHtml($item->getName()) ?></strong><br>
+                                            <span class="salesexchange-muted">
+                                                <?= $escaper->escapeHtml($item->getSku()) ?>
+                                            </span>
+                                        </label>
+                                    </td>
+                                    <td><?= $escaper->escapeHtml((string)$item->getQtyOrdered()) ?></td>
+                                    <td><?= $escaper->escapeHtml($row['remaining_qty']) ?></td>
+                                    <td>
+                                        <input class="admin__control-text salesexchange-qty-input"
+                                               type="number"
+                                               name="return_items[<?= $escaper->escapeHtmlAttr(
+                                                   (string)$itemId
+                                               ) ?>][qty]"
+                                               min="0.0001"
+                                               max="<?= $escaper->escapeHtmlAttr($row['remaining_qty']) ?>"
+                                               step="0.0001"
+                                               value="<?= $escaper->escapeHtmlAttr($formData['qty']) ?>"
+                                               data-role="return-item-field"
+                                               data-validate="<?= $escaper->escapeHtmlAttr(
+                                                   $block->getQuantityValidationJson()
+                                               ) ?>"
+                                               <?= $selected ? '' : 'disabled' ?>>
+                                    </td>
+                                    <td>
+                                        <select class="admin__control-select"
+                                                name="return_items[<?= $escaper->escapeHtmlAttr(
+                                                    (string)$itemId
+                                                ) ?>][reason_code]"
+                                                data-role="return-item-field"
+                                                data-validate="<?= $escaper->escapeHtmlAttr(
+                                                    $block->getRequiredValidationJson()
+                                                ) ?>"
+                                                <?= $selected ? '' : 'disabled' ?>>
+                                            <option value=""><?= $escaper->escapeHtml(__('Select reason')) ?></option>
+                                            <?php foreach ($block->getReasonOptions() as $value => $label): ?>
+                                                <option value="<?= $escaper->escapeHtmlAttr($value) ?>"
+                                                    <?= $formData['reason_code'] === $value ? 'selected' : '' ?>>
+                                                    <?= $escaper->escapeHtml($label) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <?= $escaper->escapeHtml(
+                                            $block->formatMoney((string)$item->getRowTotalInclTax())
+                                        ) ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="salesexchange-card" aria-labelledby="salesexchange-create-replacement-title">
+                    <div class="salesexchange-card__header">
+                        <div>
+                            <h2 id="salesexchange-create-replacement-title">
+                                <?= $escaper->escapeHtml(__('Replacement Products')) ?>
+                            </h2>
+                            <p class="salesexchange-muted">
+                                <?= $escaper->escapeHtml(
+                                    __('Enter a catalog SKU and quantity. The server resolves the current product and price.')
+                                ) ?>
+                            </p>
+                        </div>
+                        <button class="action-secondary" type="button" data-role="add-replacement-row">
+                            <span><?= $escaper->escapeHtml(__('Add Replacement Product')) ?></span>
+                        </button>
+                    </div>
+                    <div class="admin__data-grid-wrap">
+                        <table class="data-grid">
+                            <thead>
+                            <tr>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('SKU')) ?></th>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Quantity')) ?></th>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Action')) ?></th>
+                            </tr>
+                            </thead>
+                            <tbody data-role="replacement-rows">
+                            <?php foreach ($block->getReplacementFormRows() as $index => $replacementRow): ?>
+                            <tr data-role="replacement-row">
+                                <td>
+                                    <input class="admin__control-text"
+                                           type="text"
+                                           name="replacement_items[<?= $escaper->escapeHtmlAttr((string)$index) ?>][sku]"
+                                           maxlength="255"
+                                           value="<?= $escaper->escapeHtmlAttr($replacementRow['sku']) ?>"
+                                           data-validate="<?= $escaper->escapeHtmlAttr(
+                                               $block->getRequiredValidationJson()
+                                           ) ?>">
+                                </td>
+                                <td>
+                                    <input class="admin__control-text salesexchange-qty-input"
+                                           type="number"
+                                           name="replacement_items[<?= $escaper->escapeHtmlAttr((string)$index) ?>][qty]"
+                                           min="0.0001"
+                                           step="0.0001"
+                                           value="<?= $escaper->escapeHtmlAttr($replacementRow['qty']) ?>"
+                                           data-validate="<?= $escaper->escapeHtmlAttr(
+                                               $block->getQuantityValidationJson()
+                                           ) ?>">
+                                </td>
+                                <td>
+                                    <button class="action-secondary" type="button" data-role="remove-replacement-row">
+                                        <span><?= $escaper->escapeHtml(__('Remove')) ?></span>
+                                    </button>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <template data-role="replacement-row-template">
+                        <tr data-role="replacement-row">
+                            <td>
+                                <input class="admin__control-text"
+                                       type="text"
+                                       name="replacement_items[__index__][sku]"
+                                       maxlength="255"
+                                       data-validate="<?= $escaper->escapeHtmlAttr(
+                                           $block->getRequiredValidationJson()
+                                       ) ?>">
+                            </td>
+                            <td>
+                                <input class="admin__control-text salesexchange-qty-input"
+                                       type="number"
+                                       name="replacement_items[__index__][qty]"
+                                       min="0.0001"
+                                       step="0.0001"
+                                       value="1"
+                                       data-validate="<?= $escaper->escapeHtmlAttr(
+                                           $block->getQuantityValidationJson()
+                                       ) ?>">
+                            </td>
+                            <td>
+                                <button class="action-secondary" type="button" data-role="remove-replacement-row">
+                                    <span><?= $escaper->escapeHtml(__('Remove')) ?></span>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </section>
+
+                <section class="salesexchange-card" aria-labelledby="salesexchange-create-notes-title">
+                    <h2 id="salesexchange-create-notes-title"><?= $escaper->escapeHtml(__('Notes')) ?></h2>
+                    <div class="salesexchange-create-notes">
+                        <div class="admin__field">
+                            <label class="admin__field-label" for="customer-note">
+                                <span><?= $escaper->escapeHtml(__('Customer Note')) ?></span>
+                            </label>
+                            <div class="admin__field-control">
+                                <textarea class="admin__control-textarea"
+                                          id="customer-note"
+                                          name="customer_note"
+                                          rows="4"
+                                          maxlength="2000"><?= $escaper->escapeHtml(
+                                              $block->getPersistedNote('customer_note')
+                                          ) ?></textarea>
+                            </div>
+                        </div>
+                        <div class="admin__field">
+                            <label class="admin__field-label" for="internal-note">
+                                <span><?= $escaper->escapeHtml(__('Internal Note')) ?></span>
+                            </label>
+                            <div class="admin__field-control">
+                                <textarea class="admin__control-textarea"
+                                          id="internal-note"
+                                          name="internal_note"
+                                          rows="4"
+                                          maxlength="4000"><?= $escaper->escapeHtml(
+                                              $block->getPersistedNote('internal_note')
+                                          ) ?></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="salesexchange-create__actions">
+                    <a class="action-secondary" href="<?= $escaper->escapeUrl($block->getBackUrl()) ?>">
+                        <span><?= $escaper->escapeHtml(__('Cancel')) ?></span>
+                    </a>
+                    <button class="action-primary" type="submit">
+                        <span><?= $escaper->escapeHtml(__('Create Exchange Draft')) ?></span>
+                    </button>
+                </div>
+            </form>
+        <?php endif; ?>
+    <?php endif; ?>
+</div>

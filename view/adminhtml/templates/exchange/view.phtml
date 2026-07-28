@@ -1,0 +1,740 @@
+<?php
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ *
+ * @var \Bonlineco\SalesExchange\Block\Adminhtml\Exchange\View $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+
+$exchange = $block->getExchange();
+$validationConfig = '{"validation":{}}';
+$quantityValidation = '{"required-entry":true,"validate-number":true,"validate-zero-or-greater":true}';
+?>
+<?php if ($exchange === null): ?>
+    <div class="message message-error error">
+        <div><?= $escaper->escapeHtml(__('The requested exchange case no longer exists.')) ?></div>
+    </div>
+<?php else: ?>
+    <?php $order = $block->getOriginalOrder(); ?>
+    <div class="salesexchange-view">
+        <section class="salesexchange-card salesexchange-summary" aria-labelledby="salesexchange-summary-title">
+            <div class="salesexchange-card__header">
+                <div>
+                    <h1 id="salesexchange-summary-title">
+                        <?= $escaper->escapeHtml(__('Exchange #%1', $exchange->getIncrementId())) ?>
+                    </h1>
+                    <p class="salesexchange-muted">
+                        <?= $escaper->escapeHtml(__('A coordinated return, replacement, and settlement case.')) ?>
+                    </p>
+                </div>
+                <span class="salesexchange-version">
+                    <?= $escaper->escapeHtml(__('Version %1', $exchange->getVersion())) ?>
+                </span>
+            </div>
+
+            <dl class="salesexchange-metadata">
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Original Order')) ?></dt>
+                    <dd>
+                        <?php if ($order !== null && $block->getOriginalOrderViewUrl() !== ''): ?>
+                            <a href="<?= $escaper->escapeUrl($block->getOriginalOrderViewUrl()) ?>">
+                                <?= $escaper->escapeHtml(__('#%1', $order->getIncrementId())) ?>
+                            </a>
+                        <?php else: ?>
+                            <?= $escaper->escapeHtml(__('#%1', $exchange->getOriginalOrderId())) ?>
+                        <?php endif; ?>
+                    </dd>
+                </div>
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Customer ID')) ?></dt>
+                    <dd>
+                        <?= $exchange->getCustomerId() === null
+                            ? $escaper->escapeHtml(__('Guest'))
+                            : $escaper->escapeHtml((string)$exchange->getCustomerId()) ?>
+                    </dd>
+                </div>
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Currency')) ?></dt>
+                    <dd><?= $escaper->escapeHtml($exchange->getCurrencyCode()) ?></dd>
+                </div>
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Created')) ?></dt>
+                    <dd><?= $escaper->escapeHtml($block->formatDateTime($exchange->getCreatedAt())) ?></dd>
+                </div>
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Last Updated')) ?></dt>
+                    <dd><?= $escaper->escapeHtml($block->formatDateTime($exchange->getUpdatedAt())) ?></dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="salesexchange-statuses" aria-label="<?= $escaper->escapeHtmlAttr(__('Workflow statuses')) ?>">
+            <?php
+            $statuses = [
+                __('Exchange') => $exchange->getExchangeStatus(),
+                __('Return') => $exchange->getReturnStatus(),
+                __('Replacement') => $exchange->getReplacementStatus(),
+                __('Settlement') => $exchange->getSettlementStatus(),
+            ];
+            ?>
+            <?php foreach ($statuses as $label => $status): ?>
+                <div class="salesexchange-status-card">
+                    <span class="salesexchange-status-card__label"><?= $escaper->escapeHtml($label) ?></span>
+                    <strong class="salesexchange-status salesexchange-status--<?= $escaper->escapeHtmlAttr(
+                        $block->getStatusCssClass($status)
+                    ) ?>">
+                        <?= $escaper->escapeHtml($block->getStatusLabel($status)) ?>
+                    </strong>
+                </div>
+            <?php endforeach; ?>
+        </section>
+
+        <section class="salesexchange-card" aria-labelledby="salesexchange-totals-title">
+            <div class="salesexchange-card__header">
+                <h2 id="salesexchange-totals-title"><?= $escaper->escapeHtml(__('Financial Summary')) ?></h2>
+                <span class="salesexchange-muted">
+                    <?= $escaper->escapeHtml(
+                        __('Positive balance means the customer owes; negative balance means the merchant owes.')
+                    ) ?>
+                </span>
+            </div>
+            <dl class="salesexchange-totals">
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Approved Return Credit')) ?></dt>
+                    <dd><?= $escaper->escapeHtml($block->formatMoney($exchange->getReturnCreditAmount())) ?></dd>
+                </div>
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Native Credit Memo Total (Actual)')) ?></dt>
+                    <dd>
+                        <?= $escaper->escapeHtml(
+                            $block->formatMoney($exchange->getNativeReturnCreditAmount())
+                        ) ?>
+                    </dd>
+                </div>
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Native Credit Memo Base Total (Actual)')) ?></dt>
+                    <dd>
+                        <?= $escaper->escapeHtml(
+                            $block->formatBaseMoney($exchange->getBaseNativeReturnCreditAmount())
+                        ) ?>
+                    </dd>
+                </div>
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Approved Replacement Merchandise')) ?></dt>
+                    <dd><?= $escaper->escapeHtml($block->formatMoney($exchange->getReplacementAmount())) ?></dd>
+                </div>
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Approved Replacement Shipping')) ?></dt>
+                    <dd><?= $escaper->escapeHtml($block->formatMoney($exchange->getShippingAmount())) ?></dd>
+                </div>
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Native Replacement Order Total (Actual)')) ?></dt>
+                    <dd>
+                        <?= $escaper->escapeHtml(
+                            $block->formatMoney($exchange->getNativeReplacementAmount())
+                        ) ?>
+                    </dd>
+                </div>
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Native Replacement Order Base Total (Actual)')) ?></dt>
+                    <dd>
+                        <?= $escaper->escapeHtml(
+                            $block->formatBaseMoney($exchange->getBaseNativeReplacementAmount())
+                        ) ?>
+                    </dd>
+                </div>
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Replacement Order Variance')) ?></dt>
+                    <?php $replacementVariance = $block->getReplacementVariance(); ?>
+                    <dd>
+                        <?= $replacementVariance === null
+                            ? $escaper->escapeHtml(__('Not available'))
+                            : $escaper->escapeHtml($block->formatMoney($replacementVariance)) ?>
+                    </dd>
+                </div>
+                <div>
+                    <dt><?= $escaper->escapeHtml(__('Exchange Fees')) ?></dt>
+                    <dd><?= $escaper->escapeHtml($block->formatMoney($exchange->getFeeAmount())) ?></dd>
+                </div>
+                <div class="salesexchange-totals__balance">
+                    <dt><?= $escaper->escapeHtml(__('Balance')) ?></dt>
+                    <dd><?= $escaper->escapeHtml($block->formatMoney($exchange->getBalanceAmount())) ?></dd>
+                </div>
+            </dl>
+        </section>
+
+        <?php if ($block->canViewNativeCreditmemos()): ?>
+            <section class="salesexchange-card" aria-labelledby="salesexchange-creditmemos-title">
+                <div class="salesexchange-card__header">
+                    <h2 id="salesexchange-creditmemos-title">
+                        <?= $escaper->escapeHtml(__('Native Credit Memos')) ?>
+                    </h2>
+                    <span class="salesexchange-muted">
+                        <?= $escaper->escapeHtml(__('Immutable Magento document links')) ?>
+                    </span>
+                </div>
+                <?php $creditmemoLinks = $block->getCreditmemoLinks(); ?>
+                <?php if ($creditmemoLinks === []): ?>
+                    <p class="salesexchange-empty">
+                        <?= $escaper->escapeHtml(__('No native credit memos were recorded.')) ?>
+                    </p>
+                <?php else: ?>
+                    <div class="admin__data-grid-wrap">
+                        <table class="data-grid">
+                            <thead>
+                            <tr>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Created')) ?></th>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Credit Memo')) ?></th>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Expected Credit')) ?></th>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Actual Credit')) ?></th>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Base Actual')) ?></th>
+                                <th class="data-grid-th"><?= $escaper->escapeHtml(__('Status')) ?></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($creditmemoLinks as $documentLink): ?>
+                                <?php
+                                $creditmemoUrl = $block->getCreditmemoViewUrl($documentLink);
+                                $creditmemoReference = $documentLink->getIncrementId()
+                                    ?: (string)$documentLink->getDocumentId();
+                                ?>
+                                <tr>
+                                    <td>
+                                        <?= $escaper->escapeHtml(
+                                            $block->formatDateTime($documentLink->getCreatedAt())
+                                        ) ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($creditmemoUrl !== ''): ?>
+                                            <a href="<?= $escaper->escapeUrl($creditmemoUrl) ?>">
+                                                <?= $escaper->escapeHtml(__('#%1', $creditmemoReference)) ?>
+                                            </a>
+                                        <?php else: ?>
+                                            <?= $escaper->escapeHtml(__('#%1', $creditmemoReference)) ?>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?= $escaper->escapeHtml(
+                                            $block->formatMoney($documentLink->getExpectedAmount())
+                                        ) ?>
+                                    </td>
+                                    <td>
+                                        <?= $escaper->escapeHtml(
+                                            $block->formatMoney($documentLink->getAmount())
+                                        ) ?>
+                                    </td>
+                                    <td>
+                                        <?= $escaper->escapeHtml(
+                                            $block->formatBaseMoney($documentLink->getBaseAmount())
+                                        ) ?>
+                                    </td>
+                                    <td>
+                                        <span class="salesexchange-status salesexchange-status--<?= $escaper
+                                            ->escapeHtmlAttr(
+                                                $block->getCreditmemoStateCssClass(
+                                                    $documentLink->getDocumentStatus()
+                                                )
+                                            ) ?>">
+                                            <?= $escaper->escapeHtml(
+                                                $block->getCreditmemoStateLabel(
+                                                    $documentLink->getDocumentStatus()
+                                                )
+                                            ) ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </section>
+        <?php endif; ?>
+
+        <section class="salesexchange-card" aria-labelledby="salesexchange-return-items-title">
+            <div class="salesexchange-card__header">
+                <h2 id="salesexchange-return-items-title"><?= $escaper->escapeHtml(__('Return Items')) ?></h2>
+                <span class="salesexchange-status salesexchange-status--<?= $escaper->escapeHtmlAttr(
+                    $block->getStatusCssClass($exchange->getReturnStatus())
+                ) ?>">
+                    <?= $escaper->escapeHtml($block->getStatusLabel($exchange->getReturnStatus())) ?>
+                </span>
+            </div>
+            <?php $returnItems = $block->getReturnItems(); ?>
+            <?php if ($returnItems === []): ?>
+                <p class="salesexchange-empty"><?= $escaper->escapeHtml(__('No return items were recorded.')) ?></p>
+            <?php else: ?>
+                <div class="admin__data-grid-wrap">
+                    <table class="data-grid">
+                        <thead>
+                        <tr>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Product')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Requested')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Allocated')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Received')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Accepted')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Credited')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Rejected')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Reason / Inspection')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Credit')) ?></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($returnItems as $item): ?>
+                            <tr>
+                                <td>
+                                    <strong><?= $escaper->escapeHtml($item->getName()) ?></strong><br>
+                                    <span class="salesexchange-muted"><?= $escaper->escapeHtml($item->getSku()) ?></span>
+                                </td>
+                                <td><?= $escaper->escapeHtml($item->getRequestedQty()) ?></td>
+                                <td><?= $escaper->escapeHtml($item->getAllocatedQty()) ?></td>
+                                <td><?= $escaper->escapeHtml($item->getReceivedQty()) ?></td>
+                                <td><?= $escaper->escapeHtml($item->getAcceptedQty()) ?></td>
+                                <td><?= $escaper->escapeHtml($item->getCreditedQty()) ?></td>
+                                <td><?= $escaper->escapeHtml($item->getRejectedQty()) ?></td>
+                                <td>
+                                    <span><?= $escaper->escapeHtml($item->getReasonCode() ?: __('Not provided')) ?></span>
+                                    <br>
+                                    <span class="salesexchange-muted">
+                                        <?= $escaper->escapeHtml($item->getConditionCode() ?: __('Not inspected')) ?>
+                                        <?php if ($item->getDisposition()): ?>
+                                            · <?= $escaper->escapeHtml($item->getDisposition()) ?>
+                                        <?php endif; ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?= $escaper->escapeHtml($block->formatMoney($item->getRowCreditAmount())) ?>
+                                    <br>
+                                    <span class="salesexchange-muted">
+                                        <?= $escaper->escapeHtml(
+                                            __('%1 each', $block->formatMoney($item->getUnitCreditAmount()))
+                                        ) ?>
+                                    </span>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($block->canManageReceipt() && $returnItems !== []): ?>
+                <div class="salesexchange-warehouse" aria-labelledby="salesexchange-receipt-title">
+                    <h3 id="salesexchange-receipt-title"><?= $escaper->escapeHtml(__('Record Warehouse Receipt')) ?></h3>
+                    <p class="salesexchange-muted">
+                        <?= $escaper->escapeHtml(
+                            __('Save each line first. Use “Save & Finalize Receipt” only after every received line is correct.')
+                        ) ?>
+                    </p>
+                    <?php foreach ($returnItems as $item): ?>
+                        <form class="salesexchange-row-form"
+                              method="post"
+                              action="<?= $escaper->escapeUrl(
+                                  $block->getUrl('salesexchange/exchange/receive')
+                              ) ?>"
+                              data-mage-init="<?= $escaper->escapeHtmlAttr($validationConfig) ?>">
+                            <input type="hidden" name="form_key"
+                                   value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
+                            <input type="hidden" name="entity_id"
+                                   value="<?= $escaper->escapeHtmlAttr((string)$exchange->getEntityId()) ?>">
+                            <input type="hidden" name="version"
+                                   value="<?= $escaper->escapeHtmlAttr((string)$exchange->getVersion()) ?>">
+                            <input type="hidden" name="item_id"
+                                   value="<?= $escaper->escapeHtmlAttr((string)$item->getEntityId()) ?>">
+                            <input type="hidden" name="item_version"
+                                   value="<?= $escaper->escapeHtmlAttr((string)$item->getVersion()) ?>">
+                            <div class="salesexchange-row-form__identity">
+                                <strong><?= $escaper->escapeHtml($item->getName()) ?></strong>
+                                <span><?= $escaper->escapeHtml($item->getSku()) ?></span>
+                            </div>
+                            <div class="admin__field">
+                                <label class="admin__field-label"
+                                       for="receive-qty-<?= $escaper->escapeHtmlAttr((string)$item->getEntityId()) ?>">
+                                    <span><?= $escaper->escapeHtml(__('Received Quantity')) ?></span>
+                                </label>
+                                <div class="admin__field-control">
+                                    <input class="admin__control-text"
+                                           id="receive-qty-<?= $escaper->escapeHtmlAttr(
+                                               (string)$item->getEntityId()
+                                           ) ?>"
+                                           type="number"
+                                           name="received_qty"
+                                           min="0"
+                                           max="<?= $escaper->escapeHtmlAttr($item->getAllocatedQty()) ?>"
+                                           step="0.0001"
+                                           value="<?= $escaper->escapeHtmlAttr($item->getReceivedQty()) ?>"
+                                           data-validate="<?= $escaper->escapeHtmlAttr($quantityValidation) ?>">
+                                </div>
+                            </div>
+                            <div class="salesexchange-row-form__actions">
+                                <button class="action-secondary" type="submit" name="finalize" value="0">
+                                    <span><?= $escaper->escapeHtml(__('Save Receipt')) ?></span>
+                                </button>
+                                <button class="action-primary" type="submit" name="finalize" value="1">
+                                    <span><?= $escaper->escapeHtml(__('Save & Finalize Receipt')) ?></span>
+                                </button>
+                            </div>
+                        </form>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($block->canManageInspection() && $returnItems !== []): ?>
+                <div class="salesexchange-warehouse" aria-labelledby="salesexchange-inspection-title">
+                    <h3 id="salesexchange-inspection-title"><?= $escaper->escapeHtml(__('Inspect Returned Products')) ?></h3>
+                    <p class="salesexchange-muted">
+                        <?= $escaper->escapeHtml(
+                            __('Accepted plus rejected quantity must equal the received quantity before finalization.')
+                        ) ?>
+                    </p>
+                    <?php foreach ($returnItems as $item): ?>
+                        <form class="salesexchange-row-form salesexchange-row-form--inspection"
+                              method="post"
+                              action="<?= $escaper->escapeUrl(
+                                  $block->getUrl('salesexchange/exchange/inspect')
+                              ) ?>"
+                              data-mage-init="<?= $escaper->escapeHtmlAttr($validationConfig) ?>">
+                            <input type="hidden" name="form_key"
+                                   value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
+                            <input type="hidden" name="entity_id"
+                                   value="<?= $escaper->escapeHtmlAttr((string)$exchange->getEntityId()) ?>">
+                            <input type="hidden" name="version"
+                                   value="<?= $escaper->escapeHtmlAttr((string)$exchange->getVersion()) ?>">
+                            <input type="hidden" name="item_id"
+                                   value="<?= $escaper->escapeHtmlAttr((string)$item->getEntityId()) ?>">
+                            <input type="hidden" name="item_version"
+                                   value="<?= $escaper->escapeHtmlAttr((string)$item->getVersion()) ?>">
+                            <div class="salesexchange-row-form__identity">
+                                <strong><?= $escaper->escapeHtml($item->getName()) ?></strong>
+                                <span>
+                                    <?= $escaper->escapeHtml(
+                                        __('Received: %1', $item->getReceivedQty())
+                                    ) ?>
+                                </span>
+                            </div>
+                            <div class="admin__field">
+                                <label class="admin__field-label"
+                                       for="accepted-qty-<?= $escaper->escapeHtmlAttr((string)$item->getEntityId()) ?>">
+                                    <span><?= $escaper->escapeHtml(__('Accepted')) ?></span>
+                                </label>
+                                <div class="admin__field-control">
+                                    <input class="admin__control-text"
+                                           id="accepted-qty-<?= $escaper->escapeHtmlAttr(
+                                               (string)$item->getEntityId()
+                                           ) ?>"
+                                           type="number"
+                                           name="accepted_qty"
+                                           min="0"
+                                           max="<?= $escaper->escapeHtmlAttr($item->getReceivedQty()) ?>"
+                                           step="0.0001"
+                                           value="<?= $escaper->escapeHtmlAttr($item->getAcceptedQty()) ?>"
+                                           data-validate="<?= $escaper->escapeHtmlAttr($quantityValidation) ?>">
+                                </div>
+                            </div>
+                            <div class="admin__field">
+                                <label class="admin__field-label"
+                                       for="rejected-qty-<?= $escaper->escapeHtmlAttr((string)$item->getEntityId()) ?>">
+                                    <span><?= $escaper->escapeHtml(__('Rejected')) ?></span>
+                                </label>
+                                <div class="admin__field-control">
+                                    <input class="admin__control-text"
+                                           id="rejected-qty-<?= $escaper->escapeHtmlAttr(
+                                               (string)$item->getEntityId()
+                                           ) ?>"
+                                           type="number"
+                                           name="rejected_qty"
+                                           min="0"
+                                           max="<?= $escaper->escapeHtmlAttr($item->getReceivedQty()) ?>"
+                                           step="0.0001"
+                                           value="<?= $escaper->escapeHtmlAttr($item->getRejectedQty()) ?>"
+                                           data-validate="<?= $escaper->escapeHtmlAttr($quantityValidation) ?>">
+                                </div>
+                            </div>
+                            <div class="admin__field">
+                                <label class="admin__field-label"
+                                       for="condition-<?= $escaper->escapeHtmlAttr((string)$item->getEntityId()) ?>">
+                                    <span><?= $escaper->escapeHtml(__('Condition')) ?></span>
+                                </label>
+                                <div class="admin__field-control">
+                                    <select class="admin__control-select"
+                                            id="condition-<?= $escaper->escapeHtmlAttr(
+                                                (string)$item->getEntityId()
+                                            ) ?>"
+                                            name="condition_code"
+                                            data-validate="<?= $escaper->escapeHtmlAttr(
+                                                '{"required-entry":true}'
+                                            ) ?>">
+                                        <option value=""><?= $escaper->escapeHtml(__('Select condition')) ?></option>
+                                        <?php foreach ($block->getConditionOptions() as $value => $label): ?>
+                                            <option value="<?= $escaper->escapeHtmlAttr($value) ?>"
+                                                <?= $item->getConditionCode() === $value ? ' selected' : '' ?>>
+                                                <?= $escaper->escapeHtml($label) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="admin__field">
+                                <label class="admin__field-label"
+                                       for="disposition-<?= $escaper->escapeHtmlAttr((string)$item->getEntityId()) ?>">
+                                    <span><?= $escaper->escapeHtml(__('Disposition')) ?></span>
+                                </label>
+                                <div class="admin__field-control">
+                                    <select class="admin__control-select"
+                                            id="disposition-<?= $escaper->escapeHtmlAttr(
+                                                (string)$item->getEntityId()
+                                            ) ?>"
+                                            name="disposition"
+                                            data-validate="<?= $escaper->escapeHtmlAttr(
+                                                '{"required-entry":true}'
+                                            ) ?>">
+                                        <option value=""><?= $escaper->escapeHtml(__('Select disposition')) ?></option>
+                                        <?php foreach ($block->getDispositionOptions() as $value => $label): ?>
+                                            <option value="<?= $escaper->escapeHtmlAttr($value) ?>"
+                                                <?= $item->getDisposition() === $value ? ' selected' : '' ?>>
+                                                <?= $escaper->escapeHtml($label) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="salesexchange-row-form__actions">
+                                <button class="action-secondary" type="submit" name="finalize" value="0">
+                                    <span><?= $escaper->escapeHtml(__('Save Inspection')) ?></span>
+                                </button>
+                                <button class="action-primary" type="submit" name="finalize" value="1">
+                                    <span><?= $escaper->escapeHtml(__('Save & Finalize Inspection')) ?></span>
+                                </button>
+                            </div>
+                        </form>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </section>
+
+        <section class="salesexchange-card" aria-labelledby="salesexchange-replacement-title">
+            <div class="salesexchange-card__header">
+                <h2 id="salesexchange-replacement-title"><?= $escaper->escapeHtml(__('Replacement Items')) ?></h2>
+                <span class="salesexchange-status salesexchange-status--<?= $escaper->escapeHtmlAttr(
+                    $block->getStatusCssClass($exchange->getReplacementStatus())
+                ) ?>">
+                    <?= $escaper->escapeHtml($block->getStatusLabel($exchange->getReplacementStatus())) ?>
+                </span>
+            </div>
+            <?php $replacementItems = $block->getReplacementItems(); ?>
+            <?php if ($replacementItems === []): ?>
+                <p class="salesexchange-empty"><?= $escaper->escapeHtml(__('No replacement items were recorded.')) ?></p>
+            <?php else: ?>
+                <div class="admin__data-grid-wrap">
+                    <table class="data-grid">
+                        <thead>
+                        <tr>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Product')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Quantity')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Unit Price')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Row Total')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Replacement Order Item')) ?></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($replacementItems as $item): ?>
+                            <tr>
+                                <td>
+                                    <strong><?= $escaper->escapeHtml($item->getName()) ?></strong><br>
+                                    <span class="salesexchange-muted"><?= $escaper->escapeHtml($item->getSku()) ?></span>
+                                </td>
+                                <td><?= $escaper->escapeHtml($item->getQty()) ?></td>
+                                <td><?= $escaper->escapeHtml($block->formatMoney($item->getUnitPriceAmount())) ?></td>
+                                <td><?= $escaper->escapeHtml($block->formatMoney($item->getRowTotalAmount())) ?></td>
+                                <td>
+                                    <?= $item->getReplacementOrderItemId() === null
+                                        ? $escaper->escapeHtml(__('Not created'))
+                                        : $escaper->escapeHtml(
+                                            __('#%1', $item->getReplacementOrderItemId())
+                                        ) ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </section>
+
+        <section class="salesexchange-card" aria-labelledby="salesexchange-settlement-title">
+            <div class="salesexchange-card__header">
+                <h2 id="salesexchange-settlement-title"><?= $escaper->escapeHtml(__('Settlement Ledger')) ?></h2>
+                <span class="salesexchange-status salesexchange-status--<?= $escaper->escapeHtmlAttr(
+                    $block->getStatusCssClass($exchange->getSettlementStatus())
+                ) ?>">
+                    <?= $escaper->escapeHtml($block->getStatusLabel($exchange->getSettlementStatus())) ?>
+                </span>
+            </div>
+            <?php if ($block->canReconcileSettlement()): ?>
+                <?php $settlementReferenceRequired = $block->settlementRequiresExternalReference(); ?>
+                <form id="salesexchange-settlement-action"
+                      class="salesexchange-settlement-form"
+                      method="post"
+                      action="<?= $escaper->escapeUrl(
+                          $block->getUrl('salesexchange/exchange/reconcileSettlement')
+                      ) ?>"
+                      data-mage-init="<?= $escaper->escapeHtmlAttr($validationConfig) ?>">
+                    <input type="hidden" name="form_key"
+                           value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
+                    <input type="hidden" name="entity_id"
+                           value="<?= $escaper->escapeHtmlAttr((string)$exchange->getEntityId()) ?>">
+                    <input type="hidden" name="version"
+                           value="<?= $escaper->escapeHtmlAttr((string)$exchange->getVersion()) ?>">
+                    <p class="salesexchange-muted salesexchange-settlement-form__intro">
+                        <?= $escaper->escapeHtml(
+                            __(
+                                'Settlement amounts and type are derived from verified Magento documents. '
+                                . 'Record only the external reference and an optional audit comment.'
+                            )
+                        ) ?>
+                    </p>
+                    <div class="salesexchange-settlement-form__fields">
+                        <div class="admin__field<?= $settlementReferenceRequired ? ' _required' : '' ?>">
+                            <label class="admin__field-label" for="settlement-external-reference">
+                                <span><?= $escaper->escapeHtml(__('External Reference')) ?></span>
+                            </label>
+                            <div class="admin__field-control">
+                                <input class="admin__control-text"
+                                       id="settlement-external-reference"
+                                       type="text"
+                                       name="external_reference"
+                                       maxlength="255"
+                                       aria-required="<?= $settlementReferenceRequired ? 'true' : 'false' ?>"
+                                       data-validate="<?= $escaper->escapeHtmlAttr(
+                                           $settlementReferenceRequired
+                                               ? '{"required-entry":true}'
+                                               : '{}'
+                                       ) ?>">
+                                <div class="admin__field-note">
+                                    <span>
+                                        <?= $escaper->escapeHtml(
+                                            $settlementReferenceRequired
+                                                ? __(
+                                                    'Required because this settlement records a customer '
+                                                    . 'payment or merchant refund.'
+                                                )
+                                                : __('Leave blank for a balanced settlement.')
+                                        ) ?>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="admin__field">
+                            <label class="admin__field-label" for="settlement-comment">
+                                <span><?= $escaper->escapeHtml(__('Settlement Comment')) ?></span>
+                            </label>
+                            <div class="admin__field-control">
+                                <textarea class="admin__control-textarea"
+                                          id="settlement-comment"
+                                          name="comment"
+                                          maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="salesexchange-settlement-form__actions">
+                        <button class="action-primary" type="submit">
+                            <span><?= $escaper->escapeHtml(__('Reconcile Settlement')) ?></span>
+                        </button>
+                    </div>
+                </form>
+            <?php endif; ?>
+            <?php $settlements = $block->getSettlements(); ?>
+            <?php if ($settlements === []): ?>
+                <p class="salesexchange-empty"><?= $escaper->escapeHtml(__('No settlement entries were recorded.')) ?></p>
+            <?php else: ?>
+                <div class="admin__data-grid-wrap">
+                    <table class="data-grid">
+                        <thead>
+                        <tr>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Created')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Type')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Status')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Amount')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('External Reference')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Comment')) ?></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($settlements as $entry): ?>
+                            <tr>
+                                <td><?= $escaper->escapeHtml($block->formatDateTime($entry->getCreatedAt())) ?></td>
+                                <td><?= $escaper->escapeHtml($block->getSettlementTypeLabel($entry->getType())) ?></td>
+                                <td>
+                                    <span class="salesexchange-status salesexchange-status--<?= $escaper->escapeHtmlAttr(
+                                        $block->getStatusCssClass($entry->getStatus())
+                                    ) ?>">
+                                        <?= $escaper->escapeHtml($block->getStatusLabel($entry->getStatus())) ?>
+                                    </span>
+                                </td>
+                                <td><?= $escaper->escapeHtml($block->formatMoney($entry->getAmount())) ?></td>
+                                <td><?= $escaper->escapeHtml($entry->getExternalReference() ?: '—') ?></td>
+                                <td><?= $escaper->escapeHtml($entry->getComment() ?: '—') ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </section>
+
+        <section class="salesexchange-card" aria-labelledby="salesexchange-notes-title">
+            <h2 id="salesexchange-notes-title"><?= $escaper->escapeHtml(__('Notes')) ?></h2>
+            <div class="salesexchange-notes">
+                <div>
+                    <h3><?= $escaper->escapeHtml(__('Customer Note')) ?></h3>
+                    <p><?= $escaper->escapeHtml($exchange->getCustomerNote() ?: __('No customer note.')) ?></p>
+                </div>
+                <div>
+                    <h3><?= $escaper->escapeHtml(__('Internal Note')) ?></h3>
+                    <p><?= $escaper->escapeHtml($exchange->getInternalNote() ?: __('No internal note.')) ?></p>
+                </div>
+            </div>
+        </section>
+
+        <section class="salesexchange-card" aria-labelledby="salesexchange-history-title">
+            <h2 id="salesexchange-history-title"><?= $escaper->escapeHtml(__('Audit History')) ?></h2>
+            <?php $historyEntries = $block->getHistoryEntries(); ?>
+            <?php if ($historyEntries === []): ?>
+                <p class="salesexchange-empty"><?= $escaper->escapeHtml(__('No audit events were recorded.')) ?></p>
+            <?php else: ?>
+                <div class="admin__data-grid-wrap">
+                    <table class="data-grid">
+                        <thead>
+                        <tr>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Date')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Action')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Dimension')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Change')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Actor')) ?></th>
+                            <th class="data-grid-th"><?= $escaper->escapeHtml(__('Comment')) ?></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($historyEntries as $entry): ?>
+                            <tr>
+                                <td><?= $escaper->escapeHtml($block->formatDateTime($entry->getCreatedAt())) ?></td>
+                                <td><?= $escaper->escapeHtml($entry->getAction()) ?></td>
+                                <td><?= $escaper->escapeHtml($entry->getStatusDimension() ?: '—') ?></td>
+                                <td>
+                                    <?= $escaper->escapeHtml($entry->getFromValue() ?: '—') ?>
+                                    <span aria-hidden="true">→</span>
+                                    <?= $escaper->escapeHtml($entry->getToValue() ?: '—') ?>
+                                </td>
+                                <td><?= $escaper->escapeHtml($block->getHistoryActorLabel($entry)) ?></td>
+                                <td><?= $escaper->escapeHtml($entry->getComment() ?: '—') ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </section>
+    </div>
+<?php endif; ?>

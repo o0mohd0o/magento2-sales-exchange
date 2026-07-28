@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+-->
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminSalesExchangePostOnlyTest">
+        <annotations>
+            <features value="Bonlineco Sales Exchange"/>
+            <stories value="Exchange mutation request validation"/>
+            <title value="Exchange mutation route rejects GET"/>
+            <description value="Verify an authenticated GET cannot execute the POST-only approve controller."/>
+            <severity value="CRITICAL"/>
+            <group value="bonlineco_sales_exchange"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logout"/>
+        </after>
+
+        <amOnPage url="{{AdminSalesExchangeApproveGetPage.url}}"
+                  stepKey="requestApproveWithGet"/>
+        <waitForPageLoad stepKey="waitForRejectedGet"/>
+        <see userInput="404 Error: Page not found."
+             stepKey="seePostOnlyRouteRejected"/>
+    </test>
+</tests>

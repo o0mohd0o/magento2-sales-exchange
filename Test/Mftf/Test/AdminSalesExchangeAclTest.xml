@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+-->
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminSalesExchangeAclTest">
+        <annotations>
+            <features value="Bonlineco Sales Exchange"/>
+            <stories value="Exchange-order ACL"/>
+            <title value="Restricted admin cannot read exchange orders"/>
+            <description value="Verify a role without the module view resource sees neither the Exchange Orders menu item nor the direct grid route."/>
+            <severity value="CRITICAL"/>
+            <group value="bonlineco_sales_exchange"/>
+        </annotations>
+        <before>
+            <actionGroup ref="AdminLoginActionGroup"
+                         stepKey="loginAsDefaultAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLoginActionGroup"
+                         stepKey="restoreDefaultAdmin"/>
+            <actionGroup ref="AdminDeleteCustomUserActionGroup"
+                         stepKey="deleteRestrictedAdmin">
+                <argument name="user"
+                          value="SalesExchangeRestrictedAdminUser"/>
+            </actionGroup>
+            <actionGroup ref="AdminDeleteRoleByRoleNameActionGroup"
+                         stepKey="deleteRestrictedRole">
+                <argument name="role" value="SalesExchangeNoAccessRole"/>
+            </actionGroup>
+            <actionGroup ref="AdminLogoutActionGroup"
+                         stepKey="logoutDefaultAdmin"/>
+        </after>
+
+        <createData entity="SalesExchangeNoAccessRole"
+                    stepKey="createRestrictedRole"/>
+        <actionGroup ref="AdminCreateUserWithApiRoleActionGroup"
+                     stepKey="createRestrictedAdmin">
+            <argument name="user"
+                      value="SalesExchangeRestrictedAdminUser"/>
+            <argument name="role" value="SalesExchangeNoAccessRole"/>
+        </actionGroup>
+        <actionGroup ref="AdminLogoutActionGroup"
+                     stepKey="logoutFullAccessAdmin"/>
+        <actionGroup ref="AdminLoginActionGroup"
+                     stepKey="loginAsRestrictedAdmin">
+            <argument name="username"
+                      value="{{SalesExchangeRestrictedAdminUser.username}}"/>
+            <argument name="password"
+                      value="{{SalesExchangeRestrictedAdminUser.password}}"/>
+        </actionGroup>
+
+        <click selector="{{AdminMenuSection.menuItem('magento-sales-sales')}}"
+               stepKey="openSalesMenu"/>
+        <dontSeeElement
+            selector="{{AdminMenuSection.menuItem('bonlineco-salesexchange-exchange-orders')}}"
+            stepKey="dontSeeExchangeOrdersMenu"/>
+        <amOnPage url="{{AdminSalesExchangeGridPage.url}}"
+                  stepKey="openExchangeOrdersDirectly"/>
+        <waitForPageLoad stepKey="waitForAccessDenied"/>
+        <see userInput="Sorry, you need permissions to view this content."
+             selector="{{AdminMessagesSection.accessDenied}}"
+             stepKey="seeAccessDenied"/>
+        <actionGroup ref="AdminLogoutActionGroup"
+                     stepKey="logoutRestrictedAdmin"/>
+    </test>
+</tests>

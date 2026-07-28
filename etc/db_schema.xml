@@ -1,0 +1,367 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+-->
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="bonlineco_sales_exchange" resource="sales" engine="innodb"
+           comment="Bonlineco Sales Exchange Case">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true"
+                comment="Entity ID"/>
+        <column xsi:type="varchar" name="increment_id" nullable="false" length="32"
+                comment="Public Exchange Number"/>
+        <column xsi:type="int" name="original_order_id" unsigned="true" nullable="false"
+                comment="Original Order ID"/>
+        <column xsi:type="smallint" name="store_id" unsigned="true" nullable="true"
+                comment="Store ID Snapshot"/>
+        <column xsi:type="int" name="customer_id" unsigned="true" nullable="true"
+                comment="Customer ID Snapshot"/>
+        <column xsi:type="varchar" name="currency_code" nullable="false" length="3"
+                comment="Original Order Currency Code Snapshot"/>
+        <column xsi:type="varchar" name="base_currency_code" nullable="false" length="3"
+                comment="Original Order Base Currency Code Snapshot"/>
+        <column xsi:type="varchar" name="exchange_status" nullable="false" length="32" default="draft"
+                comment="Exchange Workflow Status"/>
+        <column xsi:type="varchar" name="return_status" nullable="false" length="32" default="pending"
+                comment="Return Workflow Status"/>
+        <column xsi:type="varchar" name="replacement_status" nullable="false" length="32" default="pending"
+                comment="Replacement Workflow Status"/>
+        <column xsi:type="varchar" name="settlement_status" nullable="false" length="32" default="pending"
+                comment="Settlement Workflow Status"/>
+        <column xsi:type="decimal" name="return_credit_amount" precision="20" scale="4" unsigned="false"
+                nullable="false" default="0.0000" comment="Approved Return Credit"/>
+        <column xsi:type="decimal" name="native_return_credit_amount" precision="20" scale="4"
+                unsigned="false" nullable="false" default="0.0000"
+                comment="Cumulative Native Credit Memo Total"/>
+        <column xsi:type="decimal" name="base_native_return_credit_amount" precision="20" scale="4"
+                unsigned="false" nullable="false" default="0.0000"
+                comment="Cumulative Native Credit Memo Base Total"/>
+        <column xsi:type="decimal" name="native_replacement_amount" precision="20" scale="4"
+                unsigned="false" nullable="false" default="0.0000"
+                comment="Native Replacement Order Total"/>
+        <column xsi:type="decimal" name="base_native_replacement_amount" precision="20" scale="4"
+                unsigned="false" nullable="false" default="0.0000"
+                comment="Native Replacement Order Base Total"/>
+        <column xsi:type="decimal" name="replacement_amount" precision="20" scale="4" unsigned="false"
+                nullable="false" default="0.0000" comment="Replacement Merchandise Total"/>
+        <column xsi:type="decimal" name="shipping_amount" precision="20" scale="4" unsigned="false"
+                nullable="false" default="0.0000" comment="Replacement Shipping Total"/>
+        <column xsi:type="decimal" name="fee_amount" precision="20" scale="4" unsigned="false"
+                nullable="false" default="0.0000" comment="Exchange Fee Total"/>
+        <column xsi:type="decimal" name="balance_amount" precision="20" scale="4" unsigned="false"
+                nullable="false" default="0.0000" comment="Positive Customer Due Negative Merchant Due"/>
+        <column xsi:type="text" name="customer_note" nullable="true" comment="Customer Note"/>
+        <column xsi:type="text" name="internal_note" nullable="true" comment="Internal Note"/>
+        <column xsi:type="int" name="version" unsigned="true" nullable="false" default="1"
+                comment="Optimistic Lock Version"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="BONLINECO_SALES_EXCHANGE_INCREMENT_ID">
+            <column name="increment_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="BONLINECO_SALES_EXCHANGE_ORDER_ID_SALES_ORDER_ENTITY_ID"
+                    table="bonlineco_sales_exchange" column="original_order_id"
+                    referenceTable="sales_order" referenceColumn="entity_id" onDelete="NO ACTION"/>
+        <index referenceId="BONLINECO_SALES_EXCHANGE_ORDER_ID" indexType="btree">
+            <column name="original_order_id"/>
+        </index>
+        <index referenceId="BONLINECO_SALES_EXCHANGE_CUSTOMER_ID" indexType="btree">
+            <column name="customer_id"/>
+        </index>
+        <index referenceId="BONLINECO_SALES_EXCHANGE_STATUS" indexType="btree">
+            <column name="exchange_status"/>
+        </index>
+    </table>
+
+    <table name="quote" resource="checkout" engine="innodb" comment="Sales Flat Quote">
+        <column xsi:type="int" name="bonlineco_exchange_id" unsigned="true" nullable="true"
+                comment="Bonlineco Exchange ID"/>
+        <column xsi:type="varchar" name="bonlineco_exchange_intent_hash" nullable="true" length="64"
+                comment="Bonlineco Exchange Intent SHA-256"/>
+        <constraint xsi:type="unique" referenceId="BONLINECO_QUOTE_EXCHANGE_ID_UQ">
+            <column name="bonlineco_exchange_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="BONLINECO_QUOTE_EXCHANGE_INTENT_HASH_UQ">
+            <column name="bonlineco_exchange_intent_hash"/>
+        </constraint>
+    </table>
+
+    <table name="quote_item" resource="checkout" engine="innodb" comment="Sales Flat Quote Item">
+        <column xsi:type="int" name="bonlineco_exchange_replacement_item_id" unsigned="true"
+                nullable="true" comment="Bonlineco Exchange Replacement Item ID"/>
+        <constraint xsi:type="unique" referenceId="BONLINECO_QUOTE_ITEM_EXCHANGE_REPLACEMENT_UQ">
+            <column name="bonlineco_exchange_replacement_item_id"/>
+        </constraint>
+    </table>
+
+    <table name="sales_order" resource="sales" engine="innodb" comment="Sales Flat Order">
+        <column xsi:type="int" name="bonlineco_exchange_id" unsigned="true" nullable="true"
+                comment="Bonlineco Exchange ID"/>
+        <column xsi:type="varchar" name="bonlineco_exchange_intent_hash" nullable="true" length="64"
+                comment="Bonlineco Exchange Intent SHA-256"/>
+        <constraint xsi:type="unique" referenceId="BONLINECO_SALES_ORDER_EXCHANGE_ID_UQ">
+            <column name="bonlineco_exchange_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="BONLINECO_SALES_ORDER_EXCHANGE_INTENT_HASH_UQ">
+            <column name="bonlineco_exchange_intent_hash"/>
+        </constraint>
+    </table>
+
+    <table name="sales_order_item" resource="sales" engine="innodb"
+           comment="Sales Flat Order Item">
+        <column xsi:type="int" name="bonlineco_exchange_replacement_item_id" unsigned="true"
+                nullable="true" comment="Bonlineco Exchange Replacement Item ID"/>
+        <constraint xsi:type="unique" referenceId="BONLINECO_ORDER_ITEM_EXCHANGE_REPLACEMENT_UQ">
+            <column name="bonlineco_exchange_replacement_item_id"/>
+        </constraint>
+    </table>
+
+    <table name="bonlineco_sales_exchange_allocation_guard" resource="sales" engine="innodb"
+           comment="Bonlineco Sales Exchange Allocation Guard">
+        <column xsi:type="int" name="order_item_id" unsigned="true" nullable="false"
+                comment="Original Order Item ID"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="order_item_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="BONLINECO_EXCHANGE_ALLOC_GUARD_ITEM_ID_ORDER_ITEM_ID"
+                    table="bonlineco_sales_exchange_allocation_guard" column="order_item_id"
+                    referenceTable="sales_order_item" referenceColumn="item_id" onDelete="CASCADE"/>
+    </table>
+
+    <table name="bonlineco_sales_exchange_return_item" resource="sales" engine="innodb"
+           comment="Bonlineco Sales Exchange Return Item">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true"
+                comment="Entity ID"/>
+        <column xsi:type="int" name="exchange_id" unsigned="true" nullable="false"
+                comment="Exchange ID"/>
+        <column xsi:type="int" name="order_item_id" unsigned="true" nullable="false"
+                comment="Original Order Item ID"/>
+        <column xsi:type="varchar" name="sku" nullable="false" length="255" comment="SKU Snapshot"/>
+        <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Name Snapshot"/>
+        <column xsi:type="decimal" name="requested_qty" precision="12" scale="4" unsigned="true"
+                nullable="false" default="0.0000" comment="Requested Quantity"/>
+        <column xsi:type="decimal" name="allocated_qty" precision="12" scale="4" unsigned="true"
+                nullable="false" default="0.0000" comment="Quantity Reserved By Open Exchange"/>
+        <column xsi:type="decimal" name="received_qty" precision="12" scale="4" unsigned="true"
+                nullable="false" default="0.0000" comment="Received Quantity"/>
+        <column xsi:type="boolean" name="receipt_resolved" nullable="false" default="false"
+                comment="Warehouse Receipt Explicitly Resolved"/>
+        <column xsi:type="decimal" name="accepted_qty" precision="12" scale="4" unsigned="true"
+                nullable="false" default="0.0000" comment="Accepted Quantity"/>
+        <column xsi:type="decimal" name="credited_qty" precision="12" scale="4" unsigned="true"
+                nullable="false" default="0.0000"
+                comment="Accepted Quantity Handed To Native Credit Memos"/>
+        <column xsi:type="decimal" name="rejected_qty" precision="12" scale="4" unsigned="true"
+                nullable="false" default="0.0000" comment="Rejected Quantity"/>
+        <column xsi:type="decimal" name="unit_credit_amount" precision="20" scale="4" unsigned="false"
+                nullable="false" default="0.0000" comment="Credit Per Accepted Unit"/>
+        <column xsi:type="decimal" name="row_credit_amount" precision="20" scale="4" unsigned="false"
+                nullable="false" default="0.0000" comment="Approved Row Credit"/>
+        <column xsi:type="varchar" name="reason_code" nullable="true" length="64" comment="Return Reason Code"/>
+        <column xsi:type="varchar" name="condition_code" nullable="true" length="64"
+                comment="Inspection Condition Code"/>
+        <column xsi:type="varchar" name="disposition" nullable="true" length="32"
+                comment="Inventory Disposition"/>
+        <column xsi:type="int" name="version" unsigned="true" nullable="false" default="1"
+                comment="Optimistic Lock Version"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="BONLINECO_EXCHANGE_RETURN_EXCHANGE_ORDER_ITEM">
+            <column name="exchange_id"/>
+            <column name="order_item_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="BONLINECO_EXCHANGE_RETURN_EXCHANGE_ID_EXCHANGE_ENTITY_ID"
+                    table="bonlineco_sales_exchange_return_item" column="exchange_id"
+                    referenceTable="bonlineco_sales_exchange" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <constraint xsi:type="foreign" referenceId="BONLINECO_EXCHANGE_RETURN_ITEM_ID_ORDER_ITEM_ID"
+                    table="bonlineco_sales_exchange_return_item" column="order_item_id"
+                    referenceTable="sales_order_item" referenceColumn="item_id" onDelete="NO ACTION"/>
+        <index referenceId="BONLINECO_EXCHANGE_RETURN_ORDER_ITEM_ID" indexType="btree">
+            <column name="order_item_id"/>
+        </index>
+    </table>
+
+    <table name="bonlineco_sales_exchange_replacement_item" resource="sales" engine="innodb"
+           comment="Bonlineco Sales Exchange Replacement Item">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true"
+                comment="Entity ID"/>
+        <column xsi:type="int" name="exchange_id" unsigned="true" nullable="false"
+                comment="Exchange ID"/>
+        <column xsi:type="int" name="product_id" unsigned="true" nullable="true"
+                comment="Selected Product ID"/>
+        <column xsi:type="varchar" name="sku" nullable="false" length="255" comment="SKU Snapshot"/>
+        <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Name Snapshot"/>
+        <column xsi:type="decimal" name="qty" precision="12" scale="4" unsigned="true"
+                nullable="false" default="0.0000" comment="Replacement Quantity"/>
+        <column xsi:type="decimal" name="unit_price_amount" precision="20" scale="4" unsigned="false"
+                nullable="false" default="0.0000" comment="Replacement Unit Price"/>
+        <column xsi:type="decimal" name="row_total_amount" precision="20" scale="4" unsigned="false"
+                nullable="false" default="0.0000" comment="Replacement Row Total"/>
+        <column xsi:type="text" name="product_options_json" nullable="true"
+                comment="Selected Product Options JSON"/>
+        <column xsi:type="int" name="replacement_order_item_id" unsigned="true" nullable="true"
+                comment="Created Replacement Order Item ID"/>
+        <column xsi:type="int" name="version" unsigned="true" nullable="false" default="1"
+                comment="Optimistic Lock Version"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="BONLINECO_EXCHANGE_REPLACE_EXCHANGE_ID_EXCHANGE_ENTITY_ID"
+                    table="bonlineco_sales_exchange_replacement_item" column="exchange_id"
+                    referenceTable="bonlineco_sales_exchange" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <constraint xsi:type="foreign" referenceId="BONLINECO_EXCHANGE_REPLACE_ORDER_ITEM_ID_ORDER_ITEM_ID"
+                    table="bonlineco_sales_exchange_replacement_item" column="replacement_order_item_id"
+                    referenceTable="sales_order_item" referenceColumn="item_id" onDelete="NO ACTION"/>
+        <index referenceId="BONLINECO_EXCHANGE_REPLACE_EXCHANGE_ID" indexType="btree">
+            <column name="exchange_id"/>
+        </index>
+        <index referenceId="BONLINECO_EXCHANGE_REPLACE_PRODUCT_ID" indexType="btree">
+            <column name="product_id"/>
+        </index>
+    </table>
+
+    <table name="bonlineco_sales_exchange_settlement" resource="sales" engine="innodb"
+           comment="Bonlineco Sales Exchange Settlement Ledger">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true"
+                comment="Entity ID"/>
+        <column xsi:type="int" name="exchange_id" unsigned="true" nullable="false"
+                comment="Exchange ID"/>
+        <column xsi:type="varchar" name="type" nullable="false" length="32" comment="Settlement Type"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="32" default="pending"
+                comment="Settlement Entry Status"/>
+        <column xsi:type="decimal" name="amount" precision="20" scale="4" unsigned="false"
+                nullable="false" comment="Signed Settlement Amount"/>
+        <column xsi:type="varchar" name="currency_code" nullable="false" length="3"
+                comment="Settlement Currency Code"/>
+        <column xsi:type="varchar" name="idempotency_key" nullable="false" length="128"
+                comment="Posting Idempotency Key"/>
+        <column xsi:type="varchar" name="external_reference" nullable="true" length="255"
+                comment="External Payment Reference"/>
+        <column xsi:type="text" name="comment" nullable="true" comment="Settlement Comment"/>
+        <column xsi:type="int" name="version" unsigned="true" nullable="false" default="1"
+                comment="Optimistic Lock Version"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="BONLINECO_EXCHANGE_SETTLEMENT_IDEMPOTENCY_KEY">
+            <column name="idempotency_key"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="BONLINECO_EXCHANGE_SETTLEMENT_EXCHANGE_ID_EXCHANGE_ENTITY_ID"
+                    table="bonlineco_sales_exchange_settlement" column="exchange_id"
+                    referenceTable="bonlineco_sales_exchange" referenceColumn="entity_id" onDelete="NO ACTION"/>
+        <index referenceId="BONLINECO_EXCHANGE_SETTLEMENT_EXCHANGE_ID" indexType="btree">
+            <column name="exchange_id"/>
+        </index>
+        <index referenceId="BONLINECO_EXCHANGE_SETTLEMENT_STATUS" indexType="btree">
+            <column name="status"/>
+        </index>
+    </table>
+
+    <table name="bonlineco_sales_exchange_document_link" resource="sales" engine="innodb"
+           comment="Bonlineco Sales Exchange Native Document Link">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true"
+                comment="Entity ID"/>
+        <column xsi:type="int" name="exchange_id" unsigned="true" nullable="false"
+                comment="Exchange ID"/>
+        <column xsi:type="varchar" name="document_type" nullable="false" length="32"
+                comment="Native Document Type"/>
+        <column xsi:type="int" name="document_id" unsigned="true" nullable="false"
+                comment="Native Document Entity ID"/>
+        <column xsi:type="varchar" name="increment_id" nullable="true" length="64"
+                comment="Native Document Number Snapshot"/>
+        <column xsi:type="varchar" name="operation_key" nullable="false" length="128"
+                comment="Stable Operation Idempotency Key"/>
+        <column xsi:type="text" name="item_quantities_json" nullable="true"
+                comment="Canonical Native Line Quantity Snapshot"/>
+        <column xsi:type="varchar" name="snapshot_hash" nullable="false" length="64"
+                comment="Persistent Canonical Native Document SHA-256"/>
+        <column xsi:type="decimal" name="amount" precision="20" scale="4" unsigned="false"
+                nullable="false" default="0.0000" comment="Native Document Order Currency Total"/>
+        <column xsi:type="decimal" name="expected_amount" precision="20" scale="4" unsigned="false"
+                nullable="false" default="0.0000"
+                comment="Approved Order Currency Amount Executed by Operation"/>
+        <column xsi:type="decimal" name="base_amount" precision="20" scale="4" unsigned="false"
+                nullable="false" default="0.0000" comment="Native Document Base Currency Total"/>
+        <column xsi:type="varchar" name="currency_code" nullable="false" length="3"
+                comment="Native Document Order Currency"/>
+        <column xsi:type="varchar" name="base_currency_code" nullable="false" length="3"
+                comment="Native Document Base Currency"/>
+        <column xsi:type="varchar" name="document_status" nullable="true" length="32"
+                comment="Native Document Status Snapshot"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="BONLINECO_EXCH_DOC_OPERATION_UQ">
+            <column name="operation_key"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="BONLINECO_EXCH_DOC_NATIVE_UQ">
+            <column name="document_type"/>
+            <column name="document_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="BONLINECO_EXCH_DOC_EXCHANGE_FK"
+                    table="bonlineco_sales_exchange_document_link" column="exchange_id"
+                    referenceTable="bonlineco_sales_exchange" referenceColumn="entity_id"
+                    onDelete="NO ACTION"/>
+        <index referenceId="BONLINECO_EXCH_DOC_EXCHANGE_TYPE_IDX" indexType="btree">
+            <column name="exchange_id"/>
+            <column name="document_type"/>
+        </index>
+    </table>
+
+    <table name="bonlineco_sales_exchange_history" resource="sales" engine="innodb"
+           comment="Bonlineco Sales Exchange Append Only Audit History">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true"
+                comment="Entity ID"/>
+        <column xsi:type="int" name="exchange_id" unsigned="true" nullable="false"
+                comment="Exchange ID"/>
+        <column xsi:type="varchar" name="action" nullable="false" length="64" comment="Audited Action"/>
+        <column xsi:type="varchar" name="status_dimension" nullable="true" length="32"
+                comment="Changed Workflow Dimension"/>
+        <column xsi:type="varchar" name="from_value" nullable="true" length="255"
+                comment="Previous Value"/>
+        <column xsi:type="varchar" name="to_value" nullable="true" length="255"
+                comment="New Value"/>
+        <column xsi:type="varchar" name="actor_type" nullable="false" length="32"
+                comment="Actor Type"/>
+        <column xsi:type="int" name="actor_id" unsigned="true" nullable="true" comment="Actor ID"/>
+        <column xsi:type="text" name="comment" nullable="true" comment="Audit Comment"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="BONLINECO_EXCHANGE_HISTORY_EXCHANGE_ID_EXCHANGE_ENTITY_ID"
+                    table="bonlineco_sales_exchange_history" column="exchange_id"
+                    referenceTable="bonlineco_sales_exchange" referenceColumn="entity_id" onDelete="NO ACTION"/>
+        <index referenceId="BONLINECO_EXCHANGE_HISTORY_EXCHANGE_ID_CREATED_AT" indexType="btree">
+            <column name="exchange_id"/>
+            <column name="created_at"/>
+        </index>
+    </table>
+</schema>

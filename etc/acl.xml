@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+    <acl>
+        <resources>
+            <resource id="Magento_Backend::admin">
+                <resource id="Magento_Sales::sales">
+                    <resource id="Magento_Sales::sales_operation">
+                        <resource id="Bonlineco_SalesExchange::exchange_orders"
+                                  title="Exchange Orders" translate="title" sortOrder="80">
+                            <resource id="Bonlineco_SalesExchange::view"
+                                      title="View Exchange Orders" translate="title" sortOrder="10"/>
+                            <resource id="Bonlineco_SalesExchange::create"
+                                      title="Create Exchange Orders" translate="title" sortOrder="20"/>
+                            <resource id="Bonlineco_SalesExchange::approve"
+                                      title="Approve Exchange Orders" translate="title" sortOrder="30"/>
+                            <resource id="Bonlineco_SalesExchange::warehouse"
+                                      title="Record Returns and Inspections" translate="title" sortOrder="40"/>
+                            <resource id="Bonlineco_SalesExchange::cancel"
+                                      title="Reject or Cancel Exchange Orders" translate="title" sortOrder="50">
+                                <resource id="Bonlineco_SalesExchange::replacement_cancel"
+                                          title="Cancel Unplaced Exchange Replacements"
+                                          translate="title" sortOrder="10"/>
+                            </resource>
+                            <resource id="Bonlineco_SalesExchange::financial"
+                                      title="Create Exchange Credit Memos"
+                                      translate="title" sortOrder="60"/>
+                            <resource id="Bonlineco_SalesExchange::replacement_order"
+                                      title="Create Exchange Replacement Orders"
+                                      translate="title" sortOrder="70"/>
+                            <resource id="Bonlineco_SalesExchange::settlement"
+                                      title="Reconcile Exchange Settlements"
+                                      translate="title" sortOrder="80"/>
+                        </resource>
+                    </resource>
+                </resource>
+                <resource id="Magento_Backend::stores">
+                    <resource id="Magento_Backend::stores_settings">
+                        <resource id="Magento_Config::config">
+                            <resource id="Bonlineco_SalesExchange::config"
+                                      title="Sales Exchange Configuration"
+                                      translate="title" sortOrder="75"/>
+                        </resource>
+                    </resource>
+                </resource>
+            </resource>
+        </resources>
+    </acl>
+</config>

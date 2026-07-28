@@ -1,0 +1,15 @@
+/.idea/
+/.vscode/
+/auth.json
+/build/
+/composer.lock
+/coverage/
+/.env
+/.env.*
+/.phpunit.cache/
+/.phpunit.result.cache
+/vendor/
+*.log
+*.swp
+*.swo
+.DS_Store

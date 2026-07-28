@@ -1,0 +1,151 @@
+name: Package gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php-syntax:
+    name: PHP ${{ matrix.php }} syntax and test metadata
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php:
+          - "8.1"
+          - "8.2"
+          - "8.3"
+          - "8.4"
+          - "8.5"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Configure PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: bcmath
+          coverage: none
+
+      - name: Lint PHP sources
+        run: find . -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Check PHPUnit 9/10/12 test metadata and APIs
+        run: php dev/ci/check-data-provider-metadata.php
+
+  package:
+    name: Composer and distribution package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Configure PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: "8.3"
+          extensions: bcmath, dom
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate Composer metadata
+        run: composer validate --strict --no-check-version --no-interaction
+
+      - name: Check Composer, module, and reference alignment
+        run: php dev/ci/check-package-metadata.php
+
+      - name: Validate JSON files
+        run: find . -type f -name '*.json' -print0 | xargs -0 -n1 jq empty
+
+      - name: Install XML validator
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libxml2-utils
+
+      - name: Validate XML files
+        run: find . -type f -name '*.xml' -print0 | xargs -0 -n1 xmllint --noout
+
+      - name: Validate JavaScript syntax
+        run: |
+          while IFS= read -r -d '' file; do
+            node --check "$file"
+          done < <(find view -type f -name '*.js' -print0)
+
+      - name: Reject incomplete-development markers
+        run: |
+          if rg -n '\b(TO''DO|FIX''ME)\b' \
+            --glob '!CHANGELOG.md' \
+            --glob '!.github/workflows/package.yml'; then
+            echo "Incomplete-development marker found."
+            exit 1
+          fi
+
+      - name: Reject local and sensitive package litter
+        run: |
+          forbidden="$(find . -type f \( \
+            -name 'auth.json' -o \
+            -name '.env' -o \
+            -name '.env.*' -o \
+            -name '*.log' -o \
+            -name '*.pem' -o \
+            -name '*.p12' -o \
+            -name '*.key' -o \
+            -name '.DS_Store' \
+          \) -print)"
+          if [ -n "$forbidden" ]; then
+            printf '%s\n' "$forbidden"
+            exit 1
+          fi
+
+      - name: Build and inspect Composer archive
+        run: |
+          composer archive --format=zip --dir=build
+          archive="$(find build -type f -name '*.zip' -print -quit)"
+          test -n "$archive"
+          listing="$RUNNER_TEMP/sales-exchange-archive-contents.txt"
+          unzip -Z1 "$archive" > "$listing"
+          if grep -Eq \
+            '(^|/)(\.github|Test|dev)(/|$)|(^|/)(\.gitattributes|\.gitignore)$' \
+            "$listing"; then
+            echo "Development-only content leaked into the distribution archive."
+            exit 1
+          fi
+          for required in \
+            CHANGELOG.md \
+            CONTRIBUTING.md \
+            LICENSE \
+            README.md \
+            SECURITY.md \
+            composer.json \
+            etc/module.xml \
+            registration.php; do
+            grep -Eq "(^|/)${required}$" "$listing"
+          done
+          test "$(stat -c '%s' "$archive")" -le 31457280
+
+  secret-scan:
+    name: Secret history scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"

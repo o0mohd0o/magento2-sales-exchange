@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+-->
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">bonlineco_sales_exchange_listing.bonlineco_sales_exchange_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>bonlineco_sales_exchange_columns</spinner>
+        <deps>
+            <dep>bonlineco_sales_exchange_listing.bonlineco_sales_exchange_listing_data_source</dep>
+        </deps>
+    </settings>
+    <dataSource name="bonlineco_sales_exchange_listing_data_source"
+                component="Magento_Ui/js/grid/provider">
+        <settings>
+            <storageConfig>
+                <param name="indexField" xsi:type="string">entity_id</param>
+            </storageConfig>
+            <updateUrl path="mui/index/render"/>
+        </settings>
+        <aclResource>Bonlineco_SalesExchange::view</aclResource>
+        <dataProvider class="Bonlineco\SalesExchange\Ui\DataProvider\ExchangeDataProvider"
+                      name="bonlineco_sales_exchange_listing_data_source">
+            <settings>
+                <requestFieldName>entity_id</requestFieldName>
+                <primaryFieldName>entity_id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+    <listingToolbar name="listing_top">
+        <settings>
+            <sticky>true</sticky>
+        </settings>
+        <bookmark name="bookmarks"/>
+        <columnsControls name="columns_controls"/>
+        <filters name="listing_filters"/>
+        <paging name="listing_paging"/>
+    </listingToolbar>
+    <columns name="bonlineco_sales_exchange_columns">
+        <column name="increment_id">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Exchange #</label>
+                <sorting>desc</sorting>
+            </settings>
+        </column>
+        <column name="original_order_id">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Original Order ID</label>
+            </settings>
+        </column>
+        <column name="customer_id">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Customer ID</label>
+                <visible>false</visible>
+            </settings>
+        </column>
+        <column name="exchange_status" component="Magento_Ui/js/grid/columns/select">
+            <settings>
+                <options class="Bonlineco\SalesExchange\Ui\Component\Listing\Column\ExchangeStatusOptions"/>
+                <filter>select</filter>
+                <dataType>select</dataType>
+                <label translate="true">Exchange Status</label>
+            </settings>
+        </column>
+        <column name="return_status" component="Magento_Ui/js/grid/columns/select">
+            <settings>
+                <options class="Bonlineco\SalesExchange\Ui\Component\Listing\Column\ReturnStatusOptions"/>
+                <filter>select</filter>
+                <dataType>select</dataType>
+                <label translate="true">Return Status</label>
+            </settings>
+        </column>
+        <column name="replacement_status" component="Magento_Ui/js/grid/columns/select">
+            <settings>
+                <options class="Bonlineco\SalesExchange\Ui\Component\Listing\Column\ReplacementStatusOptions"/>
+                <filter>select</filter>
+                <dataType>select</dataType>
+                <label translate="true">Replacement Status</label>
+            </settings>
+        </column>
+        <column name="settlement_status" component="Magento_Ui/js/grid/columns/select">
+            <settings>
+                <options class="Bonlineco\SalesExchange\Ui\Component\Listing\Column\SettlementStatusOptions"/>
+                <filter>select</filter>
+                <dataType>select</dataType>
+                <label translate="true">Settlement Status</label>
+            </settings>
+        </column>
+        <column name="balance_amount"
+                class="Bonlineco\SalesExchange\Ui\Component\Listing\Column\Money">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Balance</label>
+            </settings>
+        </column>
+        <column name="created_at"
+                class="Magento\Ui\Component\Listing\Columns\Date"
+                component="Magento_Ui/js/grid/columns/date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Created</label>
+            </settings>
+        </column>
+        <column name="updated_at"
+                class="Magento\Ui\Component\Listing\Columns\Date"
+                component="Magento_Ui/js/grid/columns/date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Updated</label>
+                <visible>false</visible>
+            </settings>
+        </column>
+        <actionsColumn name="actions"
+                       class="Bonlineco\SalesExchange\Ui\Component\Listing\Column\Actions">
+            <settings>
+                <indexField>entity_id</indexField>
+                <resizeEnabled>false</resizeEnabled>
+                <resizeDefaultWidth>100</resizeDefaultWidth>
+            </settings>
+        </actionsColumn>
+    </columns>
+</listing>

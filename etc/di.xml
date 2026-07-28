@@ -1,0 +1,314 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) Bonlineco.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Bonlineco\SalesExchange\Api\AllocationValidatorInterface"
+                type="Bonlineco\SalesExchange\Model\AllocationValidator"/>
+    <preference for="Bonlineco\SalesExchange\Api\BalanceCalculatorInterface"
+                type="Bonlineco\SalesExchange\Model\BalanceCalculator"/>
+    <preference for="Bonlineco\SalesExchange\Api\CancelReplacementIntentInterface"
+                type="Bonlineco\SalesExchange\Model\ReplacementOrder\CancelReplacementIntent"/>
+    <preference for="Bonlineco\SalesExchange\Api\ConfigInterface"
+                type="Bonlineco\SalesExchange\Model\Config"/>
+    <preference for="Bonlineco\SalesExchange\Api\CreateCreditmemoInterface"
+                type="Bonlineco\SalesExchange\Model\Creditmemo\CreateCreditmemo"/>
+    <preference for="Bonlineco\SalesExchange\Api\CreateExchangeInterface"
+                type="Bonlineco\SalesExchange\Model\Creation\CreateExchange"/>
+    <preference for="Bonlineco\SalesExchange\Api\CreateReplacementOrderInterface"
+                type="Bonlineco\SalesExchange\Model\ReplacementOrder\CreateReplacementOrder"/>
+    <preference for="Bonlineco\SalesExchange\Api\DocumentLinkRepositoryInterface"
+                type="Bonlineco\SalesExchange\Model\DocumentLinkRepository"/>
+    <preference for="Bonlineco\SalesExchange\Api\ExchangeEligibilityInterface"
+                type="Bonlineco\SalesExchange\Model\Eligibility\ExchangeEligibility"/>
+    <preference for="Bonlineco\SalesExchange\Api\ExchangeRepositoryInterface"
+                type="Bonlineco\SalesExchange\Model\ExchangeRepository"/>
+    <preference for="Bonlineco\SalesExchange\Api\FinancialRowCalculatorInterface"
+                type="Bonlineco\SalesExchange\Model\FinancialRowCalculator"/>
+    <preference for="Bonlineco\SalesExchange\Api\HistoryRepositoryInterface"
+                type="Bonlineco\SalesExchange\Model\HistoryRepository"/>
+    <preference for="Bonlineco\SalesExchange\Api\RemainingQuantityCalculatorInterface"
+                type="Bonlineco\SalesExchange\Model\RemainingQuantityCalculator"/>
+    <preference for="Bonlineco\SalesExchange\Api\ReconcileSettlementInterface"
+                type="Bonlineco\SalesExchange\Model\Settlement\ReconcileSettlement"/>
+    <preference for="Bonlineco\SalesExchange\Api\ReplacementItemRepositoryInterface"
+                type="Bonlineco\SalesExchange\Model\ReplacementItemRepository"/>
+    <preference for="Bonlineco\SalesExchange\Api\ReplacementDeliveryProofProviderInterface"
+                type="Bonlineco\SalesExchange\Model\ReplacementOrder\UnavailableDeliveryProofProvider"/>
+    <preference for="Bonlineco\SalesExchange\Api\ReturnItemRepositoryInterface"
+                type="Bonlineco\SalesExchange\Model\ReturnItemRepository"/>
+    <preference for="Bonlineco\SalesExchange\Api\SettlementRepositoryInterface"
+                type="Bonlineco\SalesExchange\Model\SettlementRepository"/>
+    <preference for="Bonlineco\SalesExchange\Api\StateTransitionGuardInterface"
+                type="Bonlineco\SalesExchange\Model\StateTransitionGuard"/>
+    <preference for="Bonlineco\SalesExchange\Api\SynchronizeReplacementDeliveryInterface"
+                type="Bonlineco\SalesExchange\Model\ReplacementOrder\SynchronizeReplacementDelivery"/>
+    <preference for="Bonlineco\SalesExchange\Api\TransitionExchangeInterface"
+                type="Bonlineco\SalesExchange\Model\TransitionExchange"/>
+
+    <preference for="Bonlineco\SalesExchange\Api\Data\ExchangeInterface"
+                type="Bonlineco\SalesExchange\Model\Exchange"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\CreateExchangeRequestInterface"
+                type="Bonlineco\SalesExchange\Model\CreateExchangeRequest"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\DocumentLinkInterface"
+                type="Bonlineco\SalesExchange\Model\DocumentLink"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\DocumentLinkSearchResultsInterface"
+                type="Bonlineco\SalesExchange\Model\DocumentLinkSearchResults"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\ExchangeSearchResultsInterface"
+                type="Bonlineco\SalesExchange\Model\ExchangeSearchResults"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\HistoryInterface"
+                type="Bonlineco\SalesExchange\Model\History"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\HistorySearchResultsInterface"
+                type="Bonlineco\SalesExchange\Model\HistorySearchResults"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\ReplacementItemInterface"
+                type="Bonlineco\SalesExchange\Model\ReplacementItem"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\ReplacementSelectionInterface"
+                type="Bonlineco\SalesExchange\Model\ReplacementSelection"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\ReplacementItemSearchResultsInterface"
+                type="Bonlineco\SalesExchange\Model\ReplacementItemSearchResults"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\ReturnItemInterface"
+                type="Bonlineco\SalesExchange\Model\ReturnItem"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\ReturnSelectionInterface"
+                type="Bonlineco\SalesExchange\Model\ReturnSelection"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\ReturnItemSearchResultsInterface"
+                type="Bonlineco\SalesExchange\Model\ReturnItemSearchResults"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\SettlementInterface"
+                type="Bonlineco\SalesExchange\Model\Settlement"/>
+    <preference for="Bonlineco\SalesExchange\Api\Data\SettlementSearchResultsInterface"
+                type="Bonlineco\SalesExchange\Model\SettlementSearchResults"/>
+
+    <virtualType name="Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath"
+                 type="Bonlineco\SalesExchange\Model\Math\DecimalMath">
+        <arguments>
+            <argument name="scale" xsi:type="number">4</argument>
+            <argument name="precision" xsi:type="number">12</argument>
+        </arguments>
+    </virtualType>
+    <type name="Bonlineco\SalesExchange\Model\AllocationValidator">
+        <arguments>
+            <argument name="decimalMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\RemainingQuantityCalculator">
+        <arguments>
+            <argument name="decimalMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\CanonicalRefundedQuantity">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\ReturnItemQuantityValidator">
+        <arguments>
+            <argument name="decimalMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\ReturnItemRepository">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\ReturnItemLifecycleValidator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\ReplacementItemRepository">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\FinancialRowCalculator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\ReplacementCurrencyCalculator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\FinancialAggregateCalculator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\CompletionValidator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\Creditmemo\Planner">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\Creditmemo\DocumentValidator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\Creditmemo\ReturnCreditProjection">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\Creditmemo\CreateCreditmemo">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\WorkflowCoordinator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\Creation\CreateInputValidator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\Creation\OrderItemCreditCalculator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\Creation\CreateExchange">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\Eligibility\ExchangeEligibility">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\NativeRefund\ReservationGuard">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\Workflow\ReturnOutcomeResolver">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\Workflow\WarehouseRecorder">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\ReplacementOrder\EligibilityValidator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\ReplacementOrder\IntentHasher">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\ReplacementOrder\QuoteValidator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\ReplacementOrder\NativeOrderValidator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\ReplacementOrder\NativeShipmentValidator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\Settlement\InvoiceRequestBuilder">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\Settlement\NativeInvoiceValidator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\Settlement\NativeReturnCreditValidator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Magento\Sales\Model\Order\CreditmemoDocumentFactory">
+        <plugin name="bonlineco_sales_exchange_operation_marker"
+                type="Bonlineco\SalesExchange\Plugin\CreditmemoDocumentFactoryPlugin"/>
+    </type>
+    <type name="Magento\Sales\Model\Order\RefundAdapter">
+        <plugin name="bonlineco_sales_exchange_native_refund_reservation_guard"
+                type="Bonlineco\SalesExchange\Plugin\RefundAdapterPlugin"
+                sortOrder="-1000"/>
+    </type>
+    <type name="Magento\Sales\Model\Service\CreditmemoService">
+        <plugin name="bonlineco_sales_exchange_creditmemo_service_mutex"
+                type="Bonlineco\SalesExchange\Plugin\CreditmemoServicePlugin"
+                sortOrder="-1000"/>
+    </type>
+    <type name="Magento\Sales\Model\Service\OrderService">
+        <plugin name="bonlineco_sales_exchange_native_order_cancellation"
+                type="Bonlineco\SalesExchange\Plugin\OrderServicePlugin"
+                sortOrder="-1000"/>
+    </type>
+    <type name="Magento\Sales\Model\ShipOrder">
+        <plugin name="bonlineco_sales_exchange_native_full_shipment"
+                type="Bonlineco\SalesExchange\Plugin\ShipOrderPlugin"
+                sortOrder="-1000"/>
+    </type>
+    <type name="Magento\Payment\Model\Checks\ZeroTotal">
+        <plugin name="bonlineco_sales_exchange_trusted_zero_total"
+                type="Bonlineco\SalesExchange\Plugin\ZeroTotalPlugin"/>
+    </type>
+    <type name="Magento\Quote\Model\Quote\Item\ToOrderItem">
+        <plugin name="bonlineco_sales_exchange_replacement_item_marker"
+                type="Bonlineco\SalesExchange\Plugin\OrderItemMarkerConverterPlugin"/>
+    </type>
+    <type name="Magento\Quote\Model\ValidationRules\MinimumAmountValidationRule">
+        <plugin name="bonlineco_sales_exchange_trusted_minimum_amount"
+                type="Bonlineco\SalesExchange\Plugin\MinimumAmountValidationPlugin"/>
+    </type>
+</config>

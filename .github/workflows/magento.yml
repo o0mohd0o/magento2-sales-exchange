@@ -1,0 +1,42 @@
+name: Magento compatibility
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: magento-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compute-matrix:
+    name: Build Magento/PHP matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.supported-versions.outputs.matrix }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Resolve supported PHP and service versions
+        id: supported-versions
+        uses: graycoreio/github-actions-magento2/supported-version@a65d0e50647829a9f6f972d72d87054a9c848fe0 # v8.9.0
+        with:
+          kind: custom
+          project: magento-open-source
+          # v8.9.0 does not trim entries after splitting this input on commas.
+          custom_versions: magento/project-community-edition:2.4.6-p15,magento/project-community-edition:2.4.7-p10,magento/project-community-edition:2.4.8-p5,magento/project-community-edition:2.4.9
+
+  check-extension:
+    name: Unit tests, integration tests, DI compile, and coding standard
+    needs: compute-matrix
+    uses: graycoreio/github-actions-magento2/.github/workflows/check-extension.yaml@a65d0e50647829a9f6f972d72d87054a9c848fe0 # v8.9.0
+    with:
+      matrix: ${{ needs.compute-matrix.outputs.matrix }}
+      fail-fast: false
