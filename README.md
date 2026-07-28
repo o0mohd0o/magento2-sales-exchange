@@ -21,6 +21,8 @@ trail.
 > compatibility workflow; run that full matrix and deployment-specific
 > integration tests before production use.
 
+![Bonlineco Sales Exchange workflow](docs/social/bonlineco-sales-exchange-linkedin.png)
+
 ## Features
 
 - **Sales > Exchange Orders** grid and a detailed exchange page.

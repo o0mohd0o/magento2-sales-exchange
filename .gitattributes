@@ -9,3 +9,4 @@
 # Tests must remain visible to Composer path-repository mirrors used by CI.
 # composer.json archive.exclude removes them from release ZIP files.
 /dev export-ignore
+/docs export-ignore
