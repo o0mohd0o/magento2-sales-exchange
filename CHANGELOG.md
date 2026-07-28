@@ -6,7 +6,9 @@ All notable changes to this project are documented here. The project follows
 
 ## Unreleased
 
-The first public tag is planned as `0.1.0`; it has not been published.
+No unreleased changes.
+
+## [0.1.0] - 2026-07-28
 
 ### Added
 
@@ -37,3 +39,6 @@ The first public tag is planned as `0.1.0`; it has not been published.
   layered Magento/custom ACL checks, deterministic order locking, immutable
   document fingerprints and delivery proofs, and fail-closed handling of
   unsupported totals, partial shipments, and replacement refunds.
+
+[Unreleased]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/o0mohd0o/magento2-sales-exchange/releases/tag/v0.1.0

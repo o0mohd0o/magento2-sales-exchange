@@ -15,11 +15,11 @@ replacement orders, credit memos, and invoices remain native Magento
 documents. The exchange case links them and records the workflow and audit
 trail.
 
-> **Release status:** `0.1.0` is the planned first pre-1.0 tag and has not been
-> published. The source has local unit, static-analysis, and focused isolated
-> Magento 2.4.8 integration evidence. The repository defines a wider Magento
-> compatibility workflow; run that full matrix and deployment-specific
-> integration tests before production use.
+> **Release status:** `0.1.0` is the first pre-1.0 release. The source has
+> local unit, static-analysis, and focused isolated Magento 2.4.8 integration
+> evidence, plus a hosted compatibility workflow for the four Magento targets
+> listed below. Run deployment-specific integration tests before production
+> use.
 
 ![Bonlineco Sales Exchange workflow](docs/social/bonlineco-sales-exchange-linkedin.png)
 
