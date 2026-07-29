@@ -14,6 +14,10 @@
         </item>
     </argument>
     <settings>
+        <buttons>
+            <button name="create_exchange"
+                    class="Bonlineco\SalesExchange\Ui\Component\Listing\Button\CreateExchange"/>
+        </buttons>
         <spinner>bonlineco_sales_exchange_columns</spinner>
         <deps>
             <dep>bonlineco_sales_exchange_listing.bonlineco_sales_exchange_listing_data_source</dep>

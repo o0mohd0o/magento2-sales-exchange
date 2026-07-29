@@ -8,6 +8,23 @@ All notable changes to this project are documented here. The project follows
 
 No unreleased changes.
 
+## [0.1.1] - 2026-07-29
+
+### Added
+
+- A permission-aware `Create Exchange` action on the Exchange Orders grid that
+  opens the existing original-order selection workflow when exchanges are
+  enabled.
+
+### Fixed
+
+- Preserve Magento's native admin grid collection registry when registering the
+  exchange grid, preventing `Not registered handle
+  sales_order_grid_data_source` on the regular Sales Orders grid.
+- Use the backend context authorization service for the eligible-order toolbar
+  action so rendering a native order view cannot access an undefined block
+  property.
+
 ## [0.1.0] - 2026-07-28
 
 ### Added
@@ -40,5 +57,6 @@ No unreleased changes.
   document fingerprints and delivery proofs, and fail-closed handling of
   unsupported totals, partial shipments, and replacement refunds.
 
-[Unreleased]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/o0mohd0o/magento2-sales-exchange/releases/tag/v0.1.0

@@ -15,7 +15,7 @@ replacement orders, credit memos, and invoices remain native Magento
 documents. The exchange case links them and records the workflow and audit
 trail.
 
-> **Release status:** `0.1.0` is the first pre-1.0 release. The source has
+> **Release status:** `0.1.1` is the latest pre-1.0 release. The source has
 > local unit, static-analysis, and focused isolated Magento 2.4.8 integration
 > evidence, plus a hosted compatibility workflow for the four Magento targets
 > listed below. Run deployment-specific integration tests before production
@@ -146,7 +146,9 @@ controller must not make authorization decisions from request-supplied state.
 
 ## Admin workflow
 
-1. Open an eligible native sales order and choose **Create Exchange**.
+1. Use **Sales > Operations > Exchange Orders > Create Exchange** and load
+   the original order, or open an eligible native sales order and choose
+   **Create Exchange** there.
 2. Select return quantities and reasons, then add enabled simple-product
    replacement SKUs.
 3. Create and approve the draft, authorize the return, and start the case.
@@ -382,9 +384,9 @@ Repository CI defines PHP 8.1-8.5 syntax gates, Composer/archive validation,
 XML, JSON, JavaScript, secret-history scanning, Magento-version-specific unit
 and integration tests, Magento coding standard, and DI compilation.
 
-At this source state, local evidence comprises 318 passing unit tests on each
+At this source state, local evidence comprises 325 passing unit tests on each
 of PHPUnit 9.6, 10.5, and 12.5; module PHP lint and Magento coding-standard
-checks; five focused Magento Open Source 2.4.8 integration tests with 27
+checks; six focused Magento Open Source 2.4.8 integration tests with 29
 assertions, including a real nested `OrderMutexInterface` rollback; and a clean
 isolated DI compilation after the latest shipment-validator constructor
 wiring. The MFTF Data/Test definitions validate against their schemas, the

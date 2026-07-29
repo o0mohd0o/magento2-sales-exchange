@@ -16,6 +16,10 @@
                  type="block"
                  selector="div[data-role='grid-wrapper']"
                  timeout="30"/>
+        <element name="createExchange"
+                 type="button"
+                 selector="//button[normalize-space(.)='Create Exchange']"
+                 timeout="30"/>
         <element name="columnHeader"
                  type="text"
                  selector="//div[@data-role='grid-wrapper']//th[contains(@class, 'data-grid-th')]/span[normalize-space(.)='{{label}}']"

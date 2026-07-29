@@ -89,6 +89,23 @@
             <argument name="precision" xsi:type="number">12</argument>
         </arguments>
     </virtualType>
+    <virtualType name="Bonlineco\SalesExchange\Ui\DataProvider\ExchangeSearchResult"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">bonlineco_sales_exchange</argument>
+            <argument name="resourceModel"
+                      xsi:type="string">Bonlineco\SalesExchange\Model\ResourceModel\Exchange</argument>
+            <argument name="identifierName" xsi:type="string">entity_id</argument>
+        </arguments>
+    </virtualType>
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="bonlineco_sales_exchange_listing_data_source"
+                      xsi:type="string">Bonlineco\SalesExchange\Ui\DataProvider\ExchangeSearchResult</item>
+            </argument>
+        </arguments>
+    </type>
     <type name="Bonlineco\SalesExchange\Model\AllocationValidator">
         <arguments>
             <argument name="decimalMath"

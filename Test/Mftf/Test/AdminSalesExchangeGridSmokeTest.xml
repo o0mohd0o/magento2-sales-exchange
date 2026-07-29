@@ -18,10 +18,18 @@
             <group value="bonlineco_sales_exchange"/>
         </annotations>
         <before>
+            <magentoCLI command="config:set sales_exchange/general/enabled 1"
+                        stepKey="enableSalesExchanges"/>
+            <magentoCLI command="cache:clean config"
+                        stepKey="cleanEnabledConfigCache"/>
             <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
         </before>
         <after>
             <actionGroup ref="AdminLogoutActionGroup" stepKey="logout"/>
+            <magentoCLI command="config:set sales_exchange/general/enabled 0"
+                        stepKey="disableSalesExchanges"/>
+            <magentoCLI command="cache:clean config"
+                        stepKey="cleanDisabledConfigCache"/>
         </after>
 
         <actionGroup ref="AdminNavigateMenuActionGroup"
@@ -51,5 +59,11 @@
         <seeElement
             selector="{{AdminSalesExchangeGridSection.columnHeader('Settlement Status')}}"
             stepKey="seeSettlementStatusColumn"/>
+        <seeElement selector="{{AdminSalesExchangeGridSection.createExchange}}"
+                    stepKey="seeCreateExchangeAction"/>
+        <click selector="{{AdminSalesExchangeGridSection.createExchange}}"
+               stepKey="openCreateExchange"/>
+        <seeInCurrentUrl url="salesexchange/exchange/new"
+                         stepKey="seeCreateExchangeUrl"/>
     </test>
 </tests>

@@ -13,6 +13,7 @@ use Bonlineco\SalesExchange\Api\ExchangeEligibilityInterface;
 use Bonlineco\SalesExchange\Model\Workflow\AdminActionMap;
 use Magento\Backend\Block\Template\Context;
 use Magento\Backend\Block\Widget\Container;
+use Magento\Framework\AuthorizationInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\View\Element\AbstractBlock;
 
@@ -25,6 +26,15 @@ class CreateButton extends AbstractBlock
 
     private ConfigInterface $config;
 
+    /**
+     * Held explicitly: $_authorization is declared on Magento\Backend\Block\Template,
+     * not on the framework AbstractBlock this renderless block extends. Reading the
+     * inherited property here raises an undefined-property warning, which Magento's
+     * ErrorHandler turns into an exception — and that breaks the whole admin order
+     * view page, not just this button.
+     */
+    private AuthorizationInterface $authorization;
+
     public function __construct(
         Context $context,
         ExchangeEligibilityInterface $exchangeEligibility,
@@ -33,6 +43,7 @@ class CreateButton extends AbstractBlock
     ) {
         $this->exchangeEligibility = $exchangeEligibility;
         $this->config = $config;
+        $this->authorization = $context->getAuthorization();
         parent::__construct($context, $data);
     }
 
@@ -45,8 +56,8 @@ class CreateButton extends AbstractBlock
         $parent = $this->getParentBlock();
         if (!$parent instanceof Container
             || $orderId <= 0
-            || !$this->_authorization->isAllowed(AdminActionMap::ACL_CREATE)
-            || !$this->_authorization->isAllowed(AdminActionMap::ACL_SALES_ORDER_VIEW)
+            || !$this->authorization->isAllowed(AdminActionMap::ACL_CREATE)
+            || !$this->authorization->isAllowed(AdminActionMap::ACL_SALES_ORDER_VIEW)
         ) {
             return parent::_prepareLayout();
         }
