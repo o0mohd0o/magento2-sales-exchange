@@ -71,17 +71,12 @@ $quantityValidation = '{"required-entry":true,"validate-number":true,"validate-z
         </section>
 
         <section class="salesexchange-statuses" aria-label="<?= $escaper->escapeHtmlAttr(__('Workflow statuses')) ?>">
-            <?php
-            $statuses = [
-                __('Exchange') => $exchange->getExchangeStatus(),
-                __('Return') => $exchange->getReturnStatus(),
-                __('Replacement') => $exchange->getReplacementStatus(),
-                __('Settlement') => $exchange->getSettlementStatus(),
-            ];
-            ?>
-            <?php foreach ($statuses as $label => $status): ?>
+            <?php foreach ($block->getWorkflowStatusRows() as $statusRow): ?>
+                <?php $status = $statusRow['status']; ?>
                 <div class="salesexchange-status-card">
-                    <span class="salesexchange-status-card__label"><?= $escaper->escapeHtml($label) ?></span>
+                    <span class="salesexchange-status-card__label">
+                        <?= $escaper->escapeHtml($statusRow['label']) ?>
+                    </span>
                     <strong class="salesexchange-status salesexchange-status--<?= $escaper->escapeHtmlAttr(
                         $block->getStatusCssClass($status)
                     ) ?>">

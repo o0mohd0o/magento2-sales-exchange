@@ -677,6 +677,36 @@ class View extends Container
         );
     }
 
+    /**
+     * @return array<int, array{label: Phrase, status: string}>
+     */
+    public function getWorkflowStatusRows(): array
+    {
+        $exchange = $this->getExchange();
+        if ($exchange === null) {
+            return [];
+        }
+
+        return [
+            [
+                'label' => __('Exchange'),
+                'status' => $exchange->getExchangeStatus(),
+            ],
+            [
+                'label' => __('Return'),
+                'status' => $exchange->getReturnStatus(),
+            ],
+            [
+                'label' => __('Replacement'),
+                'status' => $exchange->getReplacementStatus(),
+            ],
+            [
+                'label' => __('Settlement'),
+                'status' => $exchange->getSettlementStatus(),
+            ],
+        ];
+    }
+
     public function getStatusLabel(string $status): Phrase
     {
         return match ($status) {

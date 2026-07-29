@@ -15,7 +15,7 @@ replacement orders, credit memos, and invoices remain native Magento
 documents. The exchange case links them and records the workflow and audit
 trail.
 
-> **Release status:** `0.1.2` is the latest pre-1.0 release. The source has
+> **Release status:** `0.1.3` is the latest pre-1.0 release. The source has
 > local unit, static-analysis, and focused isolated Magento 2.4.8 integration
 > evidence, plus a hosted compatibility workflow for the four Magento targets
 > listed below. Run deployment-specific integration tests before production
@@ -384,7 +384,7 @@ Repository CI defines PHP 8.1-8.5 syntax gates, Composer/archive validation,
 XML, JSON, JavaScript, secret-history scanning, Magento-version-specific unit
 and integration tests, Magento coding standard, and DI compilation.
 
-At this source state, local evidence comprises 336 passing unit tests on each
+At this source state, local evidence comprises 337 passing unit tests on each
 of PHPUnit 9.6, 10.5, and 12.5; module PHP lint and Magento coding-standard
 checks; six focused Magento Open Source 2.4.8 integration tests with 29
 assertions, including a real nested `OrderMutexInterface` rollback; and a clean

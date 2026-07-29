@@ -103,6 +103,34 @@ class ViewTest extends TestCase
         self::assertSame('-120.0000', $subject->getReplacementVariance());
     }
 
+    public function testWorkflowStatusRowsAreSafeForTemplateIteration(): void
+    {
+        $subject = $this->newSubject();
+        $exchange = $this->exchange(ReplacementStatus::ORDERED);
+        $this->setProperty($subject, 'exchange', $exchange);
+        $this->setProperty($subject, 'exchangeLoaded', true);
+
+        $rows = $subject->getWorkflowStatusRows();
+
+        self::assertSame([0, 1, 2, 3], array_keys($rows));
+        self::assertSame(
+            ['Exchange', 'Return', 'Replacement', 'Settlement'],
+            array_map(
+                static fn (array $row): string => (string)$row['label'],
+                $rows
+            )
+        );
+        self::assertSame(
+            [
+                ExchangeStatus::IN_PROGRESS,
+                ReturnStatus::ACCEPTED,
+                ReplacementStatus::ORDERED,
+                SettlementStatus::PENDING,
+            ],
+            array_column($rows, 'status')
+        );
+    }
+
     public function testReadyUnplacedReplacementCanExposeDedicatedCancelAction(): void
     {
         $subject = $this->newSubject();

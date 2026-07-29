@@ -8,6 +8,14 @@ All notable changes to this project are documented here. The project follows
 
 No unreleased changes.
 
+## [0.1.3] - 2026-07-29
+
+### Fixed
+
+- Render exchange detail workflow statuses as sequential label/status rows
+  instead of using translated `Phrase` objects as PHP array keys, preventing
+  `Illegal offset type` errors on every valid exchange detail page.
+
 ## [0.1.2] - 2026-07-29
 
 ### Fixed
@@ -65,7 +73,8 @@ No unreleased changes.
   document fingerprints and delivery proofs, and fail-closed handling of
   unsupported totals, partial shipments, and replacement refunds.
 
-[Unreleased]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/o0mohd0o/magento2-sales-exchange/releases/tag/v0.1.0
