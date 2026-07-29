@@ -8,6 +8,13 @@ All notable changes to this project are documented here. The project follows
 
 No unreleased changes.
 
+## [0.2.2] - 2026-07-29
+
+### Fixed
+
+- Accept Magento's persisted `orig_order_id = 0` sentinel as an unset native
+  quote origin while continuing to reject every real reorder identity.
+
 ## [0.2.1] - 2026-07-29
 
 ### Fixed
@@ -124,7 +131,8 @@ No unreleased changes.
   document fingerprints and delivery proofs, and fail-closed handling of
   unsupported totals, partial shipments, and replacement refunds.
 
-[Unreleased]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.2...v0.1.3

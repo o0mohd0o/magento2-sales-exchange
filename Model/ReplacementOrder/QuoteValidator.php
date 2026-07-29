@@ -113,7 +113,7 @@ class QuoteValidator
         }
         if ((bool)$quote->getIsActive() !== $expectedActive
             || (bool)$quote->getIsSuperMode()
-            || $quote->getOrigOrderId() !== null
+            || !in_array($quote->getOrigOrderId(), [null, 0, '0'], true)
             || (int)$quote->getStoreId() !== $exchange->getStoreId()
             || (int)$originalOrder->getEntityId()
                 !== $exchange->getOriginalOrderId()

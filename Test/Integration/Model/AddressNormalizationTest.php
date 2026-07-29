@@ -102,6 +102,8 @@ class AddressNormalizationTest extends TestCase
             $shipping = $freshQuote->getShippingAddress();
 
             self::assertNotSame($billing, $shipping);
+            self::assertNotNull($freshQuote->getOrigOrderId());
+            self::assertSame(0, (int)$freshQuote->getOrigOrderId());
             self::assertSame(1, (int)$shipping->getSameAsBilling());
             self::assertSame(
                 (int)$region->getId(),

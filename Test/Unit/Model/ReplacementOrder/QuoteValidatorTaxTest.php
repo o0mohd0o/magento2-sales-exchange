@@ -10,8 +10,11 @@ namespace Bonlineco\SalesExchange\Test\Unit\Model\ReplacementOrder;
 
 use Bonlineco\SalesExchange\Api\Data\ExchangeInterface;
 use Bonlineco\SalesExchange\Api\Data\ReplacementItemInterface;
+use Bonlineco\SalesExchange\Model\Carrier\Replacement as ReplacementCarrier;
 use Bonlineco\SalesExchange\Model\Math\DecimalMath;
+use Bonlineco\SalesExchange\Model\Payment\Replacement as ReplacementPayment;
 use Bonlineco\SalesExchange\Model\ReplacementOrder\AddressSnapshotCopier;
+use Bonlineco\SalesExchange\Model\ReplacementOrder\Marker;
 use Bonlineco\SalesExchange\Model\ReplacementOrder\QuoteValidator;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
@@ -20,12 +23,44 @@ use Magento\Catalog\Model\Product\Type;
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\Quote\Address;
 use Magento\Quote\Model\Quote\Item;
+use Magento\Quote\Model\Quote\Payment;
+use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Tax\Helper\Data as TaxHelper;
 use Magento\Tax\Model\Config as TaxConfig;
 use PHPUnit\Framework\TestCase;
 
 class QuoteValidatorTaxTest extends TestCase
 {
+    public function testNativeUnsetOrigOrderSentinelsAreAccepted(): void
+    {
+        foreach ([null, 0, '0'] as $origOrderId) {
+            [$validator, $quote, $order, $exchange, $intentHash]
+                = $this->quoteIdentity($origOrderId);
+
+            $this->invoke(
+                $validator,
+                'assertQuoteIdentity',
+                [$quote, $order, $exchange, $intentHash, false]
+            );
+            self::assertSame($origOrderId, $quote->getOrigOrderId());
+        }
+    }
+
+    public function testRealOrigOrderIdIsRejected(): void
+    {
+        [$validator, $quote, $order, $exchange, $intentHash]
+            = $this->quoteIdentity(51);
+        $this->expectException(
+            \Bonlineco\SalesExchange\Exception\InvariantViolationException::class
+        );
+
+        $this->invoke(
+            $validator,
+            'assertQuoteIdentity',
+            [$quote, $order, $exchange, $intentHash, false]
+        );
+    }
+
     public function testTaxInclusiveItemUsesFrozenGrossAmounts(): void
     {
         $validator = $this->validator(true);
@@ -297,6 +332,72 @@ class QuoteValidatorTaxTest extends TestCase
         ]);
 
         return $quote;
+    }
+
+    /**
+     * @param mixed $origOrderId
+     * @return array{
+     *     QuoteValidator,
+     *     Quote,
+     *     OrderInterface,
+     *     ExchangeInterface,
+     *     string
+     * }
+     */
+    private function quoteIdentity($origOrderId): array
+    {
+        $intentHash = str_repeat('a', 64);
+        $exchange = $this->createMock(ExchangeInterface::class);
+        $exchange->method('getEntityId')->willReturn(5);
+        $exchange->method('getStoreId')->willReturn(3);
+        $exchange->method('getOriginalOrderId')->willReturn(50);
+        $exchange->method('getCustomerId')->willReturn(7);
+        $exchange->method('getCurrencyCode')->willReturn('EGP');
+        $exchange->method('getBaseCurrencyCode')->willReturn('EGP');
+
+        $order = $this->createMock(OrderInterface::class);
+        $order->method('getEntityId')->willReturn(50);
+        $order->method('getStoreId')->willReturn(3);
+        $order->method('getCustomerId')->willReturn(7);
+        $order->method('getCustomerIsGuest')->willReturn(false);
+        $order->method('getOrderCurrencyCode')->willReturn('EGP');
+        $order->method('getBaseCurrencyCode')->willReturn('EGP');
+
+        /** @var Address $shippingAddress */
+        $shippingAddress = (new \ReflectionClass(Address::class))
+            ->newInstanceWithoutConstructor();
+        $shippingAddress->setShippingMethod(
+            ReplacementCarrier::CARRIER_CODE
+            . '_'
+            . ReplacementCarrier::METHOD_CODE
+        );
+        /** @var Payment $payment */
+        $payment = (new \ReflectionClass(Payment::class))
+            ->newInstanceWithoutConstructor();
+        $payment->setMethod(ReplacementPayment::CODE);
+        $quote = $this->getMockBuilder(Quote::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getShippingAddress', 'getPayment'])
+            ->getMock();
+        $quote->method('getShippingAddress')->willReturn($shippingAddress);
+        $quote->method('getPayment')->willReturn($payment);
+        $quote->setData([
+            Marker::EXCHANGE_ID => 5,
+            Marker::INTENT_HASH => $intentHash,
+            'is_active' => false,
+            'is_super_mode' => false,
+            'orig_order_id' => $origOrderId,
+            'store_id' => 3,
+            'quote_currency_code' => 'EGP',
+            'base_currency_code' => 'EGP',
+            'customer_id' => 7,
+            'customer_is_guest' => false,
+            'customer_email' => 'order@example.com',
+            'coupon_code' => null,
+            'applied_rule_ids' => null,
+        ]);
+
+        return [$this->validator(false), $quote, $order, $exchange, $intentHash];
     }
 
     /**
