@@ -45,9 +45,10 @@ class DecimalMath
 
         $unsigned = ltrim($value, '-');
         $parts = explode('.', $unsigned, 2);
-        $fractionLength = isset($parts[1]) ? strlen($parts[1]) : 0;
+        $fraction = $parts[1] ?? '';
+        $significantFractionLength = strlen(rtrim($fraction, '0'));
 
-        if ($fractionLength > $this->scale) {
+        if ($significantFractionLength > $this->scale) {
             throw new InvariantViolationException(
                 __('The decimal value "%1" has more than %2 fractional digits.', $value, $this->scale)
             );

@@ -8,6 +8,14 @@ All notable changes to this project are documented here. The project follows
 
 No unreleased changes.
 
+## [0.1.2] - 2026-07-29
+
+### Fixed
+
+- Accept Magento-native decimal values with zero padding beyond the module's
+  four-decimal calculation scale, such as catalog price `12999.000000`,
+  without allowing non-zero excess precision to be truncated.
+
 ## [0.1.1] - 2026-07-29
 
 ### Added
@@ -57,6 +65,7 @@ No unreleased changes.
   document fingerprints and delivery proofs, and fail-closed handling of
   unsupported totals, partial shipments, and replacement refunds.
 
-[Unreleased]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/o0mohd0o/magento2-sales-exchange/releases/tag/v0.1.0

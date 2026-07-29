@@ -65,6 +65,20 @@ class ReplacementCurrencyCalculatorTest extends TestCase
         );
     }
 
+    public function testCatalogResolverAcceptsMagentoStorageScalePadding(): void
+    {
+        $order = $this->createMock(OrderInterface::class);
+        $order->method('getStoreId')->willReturn(1);
+        $order->method('getBaseToOrderRate')->willReturn('1.0000');
+
+        self::assertSame(
+            '12999.0000',
+            $this->catalogResolver('12999.000000')
+                ->execute('replacement-sku', $order)
+                ->getUnitPrice()
+        );
+    }
+
     public function testExplicitZeroConversionRateFailsClosed(): void
     {
         $order = $this->createMock(OrderInterface::class);
@@ -122,7 +136,7 @@ class ReplacementCurrencyCalculatorTest extends TestCase
         );
     }
 
-    private function catalogResolver(): ReplacementCatalogResolver
+    private function catalogResolver(string $price = '33.3333'): ReplacementCatalogResolver
     {
         $product = $this->createMock(ProductInterface::class);
         $product->method('getId')->willReturn(21);
@@ -130,7 +144,7 @@ class ReplacementCurrencyCalculatorTest extends TestCase
         $product->method('getName')->willReturn('Replacement');
         $product->method('getStatus')->willReturn(Status::STATUS_ENABLED);
         $product->method('getTypeId')->willReturn('simple');
-        $product->method('getPrice')->willReturn('33.3333');
+        $product->method('getPrice')->willReturn($price);
         $products = $this->createMock(ProductRepositoryInterface::class);
         $products->method('get')->willReturn($product);
 
