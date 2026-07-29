@@ -8,6 +8,14 @@ All notable changes to this project are documented here. The project follows
 
 No unreleased changes.
 
+## [0.2.3] - 2026-07-29
+
+### Fixed
+
+- Accept Magento's native `NULL` zero sentinel for converted no-discount order
+  item fields while continuing to reject nonzero discounts and keeping every
+  price, tax, quantity, and total comparison strict.
+
 ## [0.2.2] - 2026-07-29
 
 ### Fixed

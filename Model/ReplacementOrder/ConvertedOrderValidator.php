@@ -247,13 +247,18 @@ class ConvertedOrderValidator
                 $orderItem->getBaseTaxAmount(),
                 $quoteItem->getBaseTaxAmount()
             )
-            && $this->sameMoney(
-                $orderItem->getDiscountAmount(),
-                $quoteItem->getDiscountAmount()
+            // Magento intentionally leaves these order-item fields null when
+            // no_discount is set, while the trusted quote stores 0.0000.
+            // Both representations are native zero sentinels; every other
+            // commercial amount remains subject to strict decimal equality.
+            && $this->isNativeZeroMoney($orderItem->getDiscountAmount())
+            && $this->sameMoney($quoteItem->getDiscountAmount(), '0')
+            && $this->isNativeZeroMoney(
+                $orderItem->getBaseDiscountAmount()
             )
             && $this->sameMoney(
-                $orderItem->getBaseDiscountAmount(),
-                $quoteItem->getBaseDiscountAmount()
+                $quoteItem->getBaseDiscountAmount(),
+                '0'
             );
         if (!$matches) {
             throw new InvariantViolationException(
@@ -272,6 +277,18 @@ class ConvertedOrderValidator
             (string)$left,
             (string)$right
         ) === 0;
+    }
+
+    /**
+     * Accept Magento's native null/empty sentinel only where zero is required.
+     *
+     * @param mixed $value
+     */
+    private function isNativeZeroMoney($value): bool
+    {
+        return $value === null
+            || $value === ''
+            || $this->moneyMath->compare((string)$value, '0') === 0;
     }
 
     /**

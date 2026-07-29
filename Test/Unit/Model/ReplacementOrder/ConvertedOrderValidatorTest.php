@@ -35,6 +35,20 @@ class ConvertedOrderValidatorTest extends TestCase
         self::assertCount(1, $order->getItems());
     }
 
+    public function testNativeNullItemDiscountSentinelsPass(): void
+    {
+        [$quote, $order] = $this->documents();
+        /** @var OrderItem $item */
+        $item = $order->getItems()[0];
+        $item->unsetData(OrderItemInterface::DISCOUNT_AMOUNT);
+        $item->unsetData(OrderItemInterface::BASE_DISCOUNT_AMOUNT);
+
+        $this->validator()->execute($quote, $order);
+
+        self::assertNull($item->getDiscountAmount());
+        self::assertNull($item->getBaseDiscountAmount());
+    }
+
     /**
      * @dataProvider convertedDriftProvider
      */
@@ -63,6 +77,12 @@ class ConvertedOrderValidatorTest extends TestCase
                 break;
             case 'row_total':
                 $item->setRowTotal('99.0000');
+                break;
+            case 'discount':
+                $item->setDiscountAmount('1.0000');
+                break;
+            case 'base_discount':
+                $item->setBaseDiscountAmount('1.0000');
                 break;
             case 'price_incl_tax':
                 $item->setData('price_incl_tax', '113.0000');
@@ -109,6 +129,8 @@ class ConvertedOrderValidatorTest extends TestCase
             'SKU' => ['sku'],
             'unit price' => ['price'],
             'row price' => ['row_total'],
+            'discount' => ['discount'],
+            'base discount' => ['base_discount'],
             'gross unit price' => ['price_incl_tax'],
             'base gross unit price' => ['base_price_incl_tax'],
             'gross row price' => ['row_total_incl_tax'],

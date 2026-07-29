@@ -2,7 +2,7 @@
     "name": "bonlineco/module-sales-exchange",
     "description": "Admin-first exchange order workflow for Magento Open Source",
     "type": "magento2-module",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "license": "MIT",
     "keywords": [
         "exchange order",
