@@ -521,6 +521,60 @@ class NativePlacementGuardsTest extends TestCase
         );
     }
 
+    public function testNativeOrderAcceptsNullNoDiscountItemSentinels(): void
+    {
+        $order = $this->replacementOrder('100.0000', '14.0000');
+        $order->getItems()[0]
+            ->setDiscountAmount(null)
+            ->setBaseDiscountAmount(null);
+
+        $snapshot = $this->validator()->snapshot(
+            $order,
+            $this->originalOrder(),
+            $this->exchange('100.0000'),
+            [$this->replacementRow('100.0000')],
+            self::INTENT_HASH,
+            41
+        );
+
+        self::assertSame('114.0000', $snapshot['amount']);
+        self::assertSame([71 => 501], $snapshot['item_ids']);
+    }
+
+    /**
+     * @dataProvider nonzeroItemDiscountProvider
+     */
+    #[DataProvider('nonzeroItemDiscountProvider')]
+    public function testNativeOrderRejectsNonzeroItemDiscount(
+        string $field
+    ): void {
+        $order = $this->replacementOrder('100.0000', '14.0000');
+        $order->getItems()[0]->setData($field, '1.0000');
+        $this->expectException(InvariantViolationException::class);
+
+        $this->validator()->snapshot(
+            $order,
+            $this->originalOrder(),
+            $this->exchange('100.0000'),
+            [$this->replacementRow('100.0000')],
+            self::INTENT_HASH,
+            41
+        );
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function nonzeroItemDiscountProvider(): array
+    {
+        return [
+            'discount' => [OrderItemInterface::DISCOUNT_AMOUNT],
+            'base discount' => [
+                OrderItemInterface::BASE_DISCOUNT_AMOUNT,
+            ],
+        ];
+    }
+
     public function testNativeOrderRejectsDifferentPreparedQuoteId(): void
     {
         $this->expectException(InvariantViolationException::class);

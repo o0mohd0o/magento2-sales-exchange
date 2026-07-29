@@ -19,6 +19,7 @@ use Bonlineco\SalesExchange\Api\Status\ExchangeStatus;
 use Bonlineco\SalesExchange\Api\Status\ReplacementStatus;
 use Bonlineco\SalesExchange\Api\Status\ReturnStatus;
 use Bonlineco\SalesExchange\Api\Status\SettlementStatus;
+use Bonlineco\SalesExchange\Exception\InvariantViolationException;
 use Bonlineco\SalesExchange\Model\Creditmemo\ReturnCreditProjection;
 use Bonlineco\SalesExchange\Model\DocumentLink;
 use Bonlineco\SalesExchange\Model\DocumentLinkFactory;
@@ -540,6 +541,115 @@ class CreateReplacementOrderTest extends TestCase
         self::assertSame(2, $result['version']);
         self::assertSame(41, $result['quote_id']);
         self::assertNull($result['result']);
+    }
+
+    public function testPlacementFailureSkipsRollbackOnlyRecoveryQuery(): void
+    {
+        $command = $this->commandWithoutConstructor();
+        $exchangeRow = $this->exchangeRow(ReplacementStatus::READY, 2);
+        $exchangeRow[ExchangeInterface::REPLACEMENT_AMOUNT] = '100.0000';
+        $replacementRows = [$this->replacementRow(null)];
+        $quote = $this->modelWithoutConstructor(Quote::class);
+        $quote->setId(41);
+        $failure = new InvariantViolationException(
+            __('The decimal value "" is invalid.')
+        );
+
+        $exchangeResource = $this->createMock(ExchangeResource::class);
+        $exchangeResource->method('getDataForUpdate')
+            ->willReturn($exchangeRow);
+        $this->setProperty($command, 'exchangeResource', $exchangeResource);
+        $this->setProperty(
+            $command,
+            'exchangeFactory',
+            $this->factoryMock(
+                ExchangeFactory::class,
+                static fn (): Exchange =>
+                    (new \ReflectionClass(Exchange::class))
+                        ->newInstanceWithoutConstructor()
+            )
+        );
+        $replacementResource = $this->createMock(
+            ReplacementItemResource::class
+        );
+        $replacementResource->method('getRowsByExchangeIdForUpdate')
+            ->willReturn($replacementRows);
+        $this->setProperty(
+            $command,
+            'replacementItemResource',
+            $replacementResource
+        );
+        $aggregate = $this->createMock(FinancialAggregateCalculator::class);
+        $aggregate->method('getReplacementAmount')
+            ->willReturn('100.0000');
+        $this->setProperty($command, 'aggregateCalculator', $aggregate);
+        $hasher = $this->createMock(IntentHasher::class);
+        $hasher->method('execute')->willReturn(self::INTENT_HASH);
+        $this->setProperty($command, 'intentHasher', $hasher);
+        $this->setProperty($command, 'moneyMath', new DecimalMath());
+        $this->setProperty($command, 'versionGuard', new VersionGuard());
+
+        $config = $this->createMock(ConfigInterface::class);
+        $config->method('isEnabled')->with(1)->willReturn(true);
+        $this->setProperty($command, 'config', $config);
+        $documentResource = $this->createMock(DocumentLinkResource::class);
+        $documentResource->method('getByOperationKeyForUpdate')
+            ->willReturn(null);
+        $this->setProperty(
+            $command,
+            'documentLinkResource',
+            $documentResource
+        );
+        $preparedLookup = $this->createMock(PreparedQuoteLookup::class);
+        $preparedLookup->method('find')->willReturn($quote);
+        $this->setProperty(
+            $command,
+            'preparedQuoteLookup',
+            $preparedLookup
+        );
+        $resolver = $this->createMock(NativeOrderResolver::class);
+        $resolver->expects(self::once())
+            ->method('find')
+            ->with(7, self::INTENT_HASH, 41)
+            ->willReturn(null);
+        $this->setProperty($command, 'nativeOrderResolver', $resolver);
+        $orderRepository = $this->createMock(
+            OrderRepositoryInterface::class
+        );
+        $orderRepository->method('get')
+            ->with(100)
+            ->willReturn($this->order(100, '000000100'));
+        $this->setProperty(
+            $command,
+            'orderRepository',
+            $orderRepository
+        );
+        $placer = $this->createMock(NativeOrderPlacer::class);
+        $placer->expects(self::once())
+            ->method('execute')
+            ->willThrowException($failure);
+        $this->setProperty($command, 'nativeOrderPlacer', $placer);
+
+        $method = new \ReflectionMethod(
+            CreateReplacementOrder::class,
+            'placeLocked'
+        );
+        try {
+            $method->invoke(
+                $command,
+                7,
+                100,
+                2,
+                self::INTENT_HASH,
+                41,
+                'sales-exchange:replacement-order:v1:7'
+            );
+            self::fail('The original placement failure must be preserved.');
+        } catch (\ReflectionException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            self::assertSame($failure, $exception);
+        }
     }
 
     public function testStaleTerminalReplayIgnoresMutableStatusAndDisabledConfig(): void

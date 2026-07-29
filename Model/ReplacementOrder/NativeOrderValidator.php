@@ -490,14 +490,13 @@ class NativeOrderValidator
                     $pricesIncludeTax ? $rowTotalInclTax : $rowTotal,
                     (string)$row[ReplacementItemInterface::ROW_TOTAL_AMOUNT]
                 ) === 0
-                && $this->moneyMath->compare(
-                    (string)$item->getDiscountAmount(),
-                    '0'
-                ) === 0
-                && $this->moneyMath->compare(
-                    (string)$item->getBaseDiscountAmount(),
-                    '0'
-                ) === 0;
+                // Magento's converted no-discount item deliberately keeps
+                // these values NULL in memory even after repository save.
+                // The database normalizes them to zero on reload, so accept
+                // either native zero sentinel while rejecting every nonzero
+                // discount.
+                && $this->isZero($item->getDiscountAmount())
+                && $this->isZero($item->getBaseDiscountAmount());
             if (!$matches) {
                 throw new InvariantViolationException(
                     __('A native order item drifted from its frozen replacement row.')

@@ -8,6 +8,16 @@ All notable changes to this project are documented here. The project follows
 
 No unreleased changes.
 
+## [0.2.4] - 2026-07-29
+
+### Fixed
+
+- Accept Magento's native `NULL` zero sentinels when validating the
+  just-saved no-discount order item, while continuing to reject every
+  nonzero item discount.
+- Preserve the original placement failure by letting the outer order mutex
+  finish its physical rollback before any idempotent recovery query.
+
 ## [0.2.3] - 2026-07-29
 
 ### Fixed

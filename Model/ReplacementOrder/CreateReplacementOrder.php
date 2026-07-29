@@ -534,54 +534,20 @@ class CreateReplacementOrder implements CreateReplacementOrderInterface
         );
         $originalOrder = $this->orderRepository->get($originalOrderId);
 
-        try {
-            $placedOrderId = $this->nativeOrderPlacer->execute(
-                $quote,
-                $originalOrder,
-                $state['exchange'],
-                $state['replacement_rows'],
-                $state['intent_hash']
-            );
-        } catch (\Throwable $exception) {
-            $recovered = $this->nativeOrderResolver->find(
-                $exchangeId,
-                $state['intent_hash'],
-                $quoteId
-            );
-            if ($recovered !== null) {
-                $recoveredId = (int)$recovered->getEntityId();
-                $this->withReplacementOrderLock(
-                    $originalOrderId,
-                    $recoveredId,
-                    \Closure::fromCallable(
-                        [$this, 'validateCommittedOrderLocked']
-                    ),
-                    [
-                        $exchangeId,
-                        $originalOrderId,
-                        $recoveredId,
-                        $quoteId,
-                        $state,
-                    ]
-                );
-                try {
-                    $this->logger->critical(
-                        'Native replacement order committed after placement raised an exception.',
-                        [
-                            'exception' => $exception,
-                            'exchange_id' => $exchangeId,
-                            'order_id' => $recoveredId,
-                        ]
-                    );
-                } catch (\Throwable $loggingException) {
-                    // Logging cannot roll back an already committed intent.
-                    unset($loggingException);
-                }
-
-                return $recoveredId;
-            }
-            throw $exception;
-        }
+        // NativeOrderPlacer runs inside this original-order mutex and marks
+        // the shared adapter rollback-only on every placement failure. Do not
+        // query for or lock the still-visible uncommitted order here: opening
+        // another nested transaction would mask the real failure with
+        // "Rolled back transaction has not been completed correctly."
+        // The outer mutex must perform the physical rollback first; a later
+        // request can recover any genuinely committed idempotent result.
+        $placedOrderId = $this->nativeOrderPlacer->execute(
+            $quote,
+            $originalOrder,
+            $state['exchange'],
+            $state['replacement_rows'],
+            $state['intent_hash']
+        );
 
         return (int)$this->withReplacementOrderLock(
             $originalOrderId,
