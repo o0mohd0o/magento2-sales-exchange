@@ -30,6 +30,7 @@ use Magento\Framework\Api\SearchCriteriaInterface;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Math\Random;
 use Magento\Sales\Api\OrderRepositoryInterface;
+use Magento\Tax\Model\Config as TaxConfig;
 
 /**
  * Exchange case repository with calculated balance and guarded status writes.
@@ -68,6 +69,8 @@ class ExchangeRepository extends AbstractRepository implements ExchangeRepositor
 
     private NativeReplacementProjection $nativeReplacementProjection;
 
+    private TaxConfig $taxConfig;
+
     public function __construct(
         ExchangeFactory $exchangeFactory,
         ExchangeResource $exchangeResource,
@@ -83,7 +86,8 @@ class ExchangeRepository extends AbstractRepository implements ExchangeRepositor
         OrderRepositoryInterface $orderRepository,
         ReturnItemResource $returnItemResource,
         ReturnCreditProjection $returnCreditProjection,
-        NativeReplacementProjection $nativeReplacementProjection
+        NativeReplacementProjection $nativeReplacementProjection,
+        TaxConfig $taxConfig
     ) {
         $this->exchangeFactory = $exchangeFactory;
         $this->exchangeResource = $exchangeResource;
@@ -100,6 +104,7 @@ class ExchangeRepository extends AbstractRepository implements ExchangeRepositor
         $this->returnItemResource = $returnItemResource;
         $this->returnCreditProjection = $returnCreditProjection;
         $this->nativeReplacementProjection = $nativeReplacementProjection;
+        $this->taxConfig = $taxConfig;
     }
 
     /**
@@ -244,6 +249,9 @@ class ExchangeRepository extends AbstractRepository implements ExchangeRepositor
         );
         $exchange->setCurrencyCode((string)$order->getOrderCurrencyCode());
         $exchange->setBaseCurrencyCode((string)$order->getBaseCurrencyCode());
+        $exchange->setCatalogPricesIncludeTax(
+            $this->taxConfig->priceIncludesTax($order->getStoreId())
+        );
         $exchange->setIncrementId('EX-' . strtoupper($this->random->getRandomString(16)));
         $exchange->setExchangeStatus(ExchangeStatus::DRAFT);
         $exchange->setReturnStatus(ReturnStatus::PENDING);
@@ -401,6 +409,9 @@ class ExchangeRepository extends AbstractRepository implements ExchangeRepositor
             && (string)$persisted[ExchangeInterface::CURRENCY_CODE] === $exchange->getCurrencyCode()
             && (string)$persisted[ExchangeInterface::BASE_CURRENCY_CODE]
                 === $exchange->getBaseCurrencyCode()
+            && $this->nullableBool(
+                $persisted[ExchangeInterface::CATALOG_PRICES_INCLUDE_TAX]
+            ) === $exchange->getCatalogPricesIncludeTax()
             && (string)$persisted[ExchangeInterface::CREATED_AT] === $exchange->getCreatedAt();
         if (!$matches) {
             throw new InvariantViolationException(
@@ -456,6 +467,14 @@ class ExchangeRepository extends AbstractRepository implements ExchangeRepositor
     private function nullableInt($value): ?int
     {
         return $value === null ? null : (int)$value;
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private function nullableBool($value): ?bool
+    {
+        return $value === null ? null : (bool)$value;
     }
 
     private function recordInitialStates(ExchangeInterface $exchange): void

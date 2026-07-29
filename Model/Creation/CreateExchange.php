@@ -43,6 +43,7 @@ use Magento\Framework\Math\Random;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\Data\OrderItemInterface;
 use Magento\Sales\Model\OrderMutexInterface;
+use Magento\Tax\Model\Config as TaxConfig;
 
 /**
  * Single transactional writer for a new draft exchange aggregate.
@@ -93,6 +94,8 @@ class CreateExchange implements CreateExchangeInterface
 
     private OrderMutexInterface $orderMutex;
 
+    private TaxConfig $taxConfig;
+
     public function __construct(
         ExchangeEligibilityInterface $exchangeEligibility,
         ConfigInterface $config,
@@ -114,7 +117,8 @@ class CreateExchange implements CreateExchangeInterface
         ReplacementCurrencyCalculator $replacementCurrencyCalculator,
         DecimalMath $quantityMath,
         Random $random,
-        OrderMutexInterface $orderMutex
+        OrderMutexInterface $orderMutex,
+        TaxConfig $taxConfig
     ) {
         $this->exchangeEligibility = $exchangeEligibility;
         $this->config = $config;
@@ -137,6 +141,7 @@ class CreateExchange implements CreateExchangeInterface
         $this->quantityMath = $quantityMath;
         $this->random = $random;
         $this->orderMutex = $orderMutex;
+        $this->taxConfig = $taxConfig;
     }
 
     public function execute(CreateExchangeRequestInterface $request): ExchangeInterface
@@ -240,6 +245,9 @@ class CreateExchange implements CreateExchangeInterface
             ->setCustomerId($customerId === null ? null : (int)$customerId)
             ->setCurrencyCode((string)$order->getOrderCurrencyCode())
             ->setBaseCurrencyCode((string)$order->getBaseCurrencyCode())
+            ->setCatalogPricesIncludeTax(
+                $this->taxConfig->priceIncludesTax($order->getStoreId())
+            )
             ->setExchangeStatus(ExchangeStatus::DRAFT)
             ->setReturnStatus(ReturnStatus::PENDING)
             ->setReplacementStatus(ReplacementStatus::PENDING)

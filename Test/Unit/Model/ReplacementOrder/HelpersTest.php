@@ -65,6 +65,73 @@ class HelpersTest extends TestCase
         );
     }
 
+    public function testIntentIncludesFrozenCatalogTaxMode(): void
+    {
+        $hasher = $this->hasher();
+        $rows = [$this->row(11, 101)];
+
+        self::assertNotSame(
+            $hasher->execute(
+                $this->exchange(
+                    ReplacementStatus::READY,
+                    '0.0000',
+                    '15.0000',
+                    false
+                ),
+                $rows
+            ),
+            $hasher->execute(
+                $this->exchange(
+                    ReplacementStatus::READY,
+                    '0.0000',
+                    '15.0000',
+                    true
+                ),
+                $rows
+            )
+        );
+    }
+
+    public function testLegacyIntentHashKeepsPreTaxSnapshotShape(): void
+    {
+        $exchange = $this->exchange(
+            ReplacementStatus::READY,
+            '0.0000',
+            '15.0000',
+            null
+        );
+        $rows = [$this->row(11, 101)];
+        $legacySnapshot = [
+            'exchange' => [
+                'entity_id' => 5,
+                'increment_id' => 'EX-TEST',
+                'original_order_id' => 50,
+                'store_id' => 1,
+                'customer_id' => 7,
+                'currency_code' => 'EGP',
+                'base_currency_code' => 'EGP',
+                'replacement_amount' => '15.0000',
+                'shipping_amount' => '0.0000',
+                'fee_amount' => '0.0000',
+            ],
+            'replacement_items' => [[
+                'entity_id' => 11,
+                'product_id' => 101,
+                'sku' => 'sku-101',
+                'name' => 'Product 101',
+                'qty' => '1.0000',
+                'unit_price_amount' => '15.0000',
+                'row_total_amount' => '15.0000',
+                'product_options_json' => null,
+            ]],
+        ];
+
+        self::assertSame(
+            hash('sha256', (new Json())->serialize($legacySnapshot)),
+            $this->hasher()->execute($exchange, $rows)
+        );
+    }
+
     public function testLifecycleEligibilityRequiresReadyButSnapshotSupportsReplay(): void
     {
         $validator = $this->eligibilityValidator();
@@ -294,7 +361,8 @@ class HelpersTest extends TestCase
     private function exchange(
         string $replacementStatus,
         string $shippingAmount = '0.0000',
-        string $replacementAmount = '30.0000'
+        string $replacementAmount = '30.0000',
+        ?bool $catalogPricesIncludeTax = null
     ): ExchangeInterface {
         $exchange = $this->createMock(ExchangeInterface::class);
         $exchange->method('getEntityId')->willReturn(5);
@@ -304,6 +372,8 @@ class HelpersTest extends TestCase
         $exchange->method('getCustomerId')->willReturn(7);
         $exchange->method('getCurrencyCode')->willReturn('EGP');
         $exchange->method('getBaseCurrencyCode')->willReturn('EGP');
+        $exchange->method('getCatalogPricesIncludeTax')
+            ->willReturn($catalogPricesIncludeTax);
         $exchange->method('getExchangeStatus')
             ->willReturn(ExchangeStatus::IN_PROGRESS);
         $exchange->method('getReturnStatus')

@@ -22,6 +22,7 @@ interface ExchangeInterface
     public const CUSTOMER_ID = 'customer_id';
     public const CURRENCY_CODE = 'currency_code';
     public const BASE_CURRENCY_CODE = 'base_currency_code';
+    public const CATALOG_PRICES_INCLUDE_TAX = 'catalog_prices_include_tax';
     public const EXCHANGE_STATUS = 'exchange_status';
     public const RETURN_STATUS = 'return_status';
     public const REPLACEMENT_STATUS = 'replacement_status';
@@ -77,6 +78,10 @@ interface ExchangeInterface
     public function getBaseCurrencyCode(): string;
 
     public function setBaseCurrencyCode(string $currencyCode): self;
+
+    public function getCatalogPricesIncludeTax(): ?bool;
+
+    public function setCatalogPricesIncludeTax(?bool $includeTax): self;
 
     public function getExchangeStatus(): string;
 

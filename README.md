@@ -15,7 +15,7 @@ replacement orders, credit memos, and invoices remain native Magento
 documents. The exchange case links them and records the workflow and audit
 trail.
 
-> **Release status:** `0.1.3` is the latest pre-1.0 release. The source has
+> **Release status:** `0.2.0` is the latest pre-1.0 release. The source has
 > local unit, static-analysis, and focused isolated Magento 2.4.8 integration
 > evidence, plus a hosted compatibility workflow for the four Magento targets
 > listed below. Run deployment-specific integration tests before production
@@ -56,6 +56,8 @@ trail.
 - A PHP version supported by the selected Magento release, within PHP
   `8.1` through `8.5`.
 - PHP extension `bcmath`.
+- Magento tax calculation configured with **Apply Tax On** set to
+  **Custom price if available** for every store that uses exchange orders.
 
 The compatibility workflow resolves the supported PHP/service combinations for
 these release representatives:
@@ -68,6 +70,20 @@ these release representatives:
 | 2.4.9 | 2.4.9 |
 
 Patch targets must be refreshed as Magento publishes new security releases.
+
+### Upgrading from 0.1.x
+
+Version `0.2.0` adds a nullable catalog tax-mode snapshot. Run
+`bin/magento setup:upgrade` before re-enabling exchange operations. Native
+orders already linked by `0.1.x` retain their legacy intent and document
+fingerprints and remain replay-compatible.
+
+Unplaced `0.1.x` exchanges deliberately keep a `NULL` tax-mode snapshot because
+their approved amount cannot prove whether catalog prices included tax. Cancel
+and recreate those legacy exchanges before placement. Do not bulk-fill the
+column unless the store tax configuration at approval time has been
+independently verified and no prepared quote or native replacement order
+exists.
 
 ## Installation
 
@@ -344,8 +360,10 @@ dependencies to `Bonlineco_SalesExchange`.
   database writes, and custom refund implementations that bypass
   `OrderService`, `ShipOrder`, or `RefundAdapter` are outside the supported
   mutation boundary.
-- Atomic behavior with split sales/module database connections and synchronous
-  third-party observers requires deployment-specific proof.
+- Replacement placement is rejected when quote and order resources use
+  different database adapters. Synchronous third-party API calls, emails, or
+  webhooks cannot be rolled back with the database; use commit callbacks or a
+  durable outbox for those side effects.
 
 ## Testing and release evidence
 
@@ -384,11 +402,12 @@ Repository CI defines PHP 8.1-8.5 syntax gates, Composer/archive validation,
 XML, JSON, JavaScript, secret-history scanning, Magento-version-specific unit
 and integration tests, Magento coding standard, and DI compilation.
 
-At this source state, local evidence comprises 337 passing unit tests on each
-of PHPUnit 9.6, 10.5, and 12.5; module PHP lint and Magento coding-standard
-checks; six focused Magento Open Source 2.4.8 integration tests with 29
+At this source state, local evidence comprises 380 passing unit tests with 1,030
+assertions on PHPUnit 10.5, with cross-version PHPUnit 9/10/12 provider
+metadata; module PHP lint and Magento coding-standard checks; six focused
+Magento Open Source 2.4.8 integration tests with 29
 assertions, including a real nested `OrderMutexInterface` rollback; and a clean
-isolated DI compilation after the latest shipment-validator constructor
+isolated DI compilation after the replacement quote pricing and tax
 wiring. The MFTF Data/Test definitions validate against their schemas, the
 Page/Section files are well-formed, and all three tests generate to Cests;
 browser execution is not claimed. These results do not substitute for the

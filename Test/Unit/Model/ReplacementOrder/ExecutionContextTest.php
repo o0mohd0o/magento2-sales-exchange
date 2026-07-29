@@ -8,11 +8,12 @@ declare(strict_types=1);
 
 namespace Bonlineco\SalesExchange\Test\Unit\Model\ReplacementOrder;
 
+use Bonlineco\SalesExchange\Api\Data\ReplacementItemInterface;
 use Bonlineco\SalesExchange\Exception\InvariantViolationException;
 use Bonlineco\SalesExchange\Model\ReplacementOrder\ExecutionContext;
 use Bonlineco\SalesExchange\Model\ReplacementOrder\Marker;
-use Magento\Quote\Api\Data\CartInterface;
 use Magento\Quote\Model\Quote;
+use Magento\Sales\Api\Data\OrderInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -160,6 +161,105 @@ class ExecutionContextTest extends TestCase
         self::assertFalse($context->isTrustedQuote($trusted));
     }
 
+    public function testFrozenUnitPricesAreBoundAndClearedWithIntent(): void
+    {
+        $context = new ExecutionContext();
+
+        $context->execute(
+            7,
+            self::INTENT_HASH,
+            static function () use ($context): void {
+                self::assertSame(
+                    '12999.0000',
+                    $context->getFrozenUnitPrice(71)
+                );
+                self::assertNull($context->getFrozenUnitPrice(72));
+            },
+            [[
+                ReplacementItemInterface::ENTITY_ID => 71,
+                ReplacementItemInterface::PRODUCT_ID => 21,
+                ReplacementItemInterface::SKU => 'replacement-sku',
+                ReplacementItemInterface::NAME => 'Replacement',
+                ReplacementItemInterface::QTY => '1.0000',
+                ReplacementItemInterface::UNIT_PRICE_AMOUNT => '12999.0000',
+                ReplacementItemInterface::ROW_TOTAL_AMOUNT => '12999.0000',
+            ]]
+        );
+
+        self::assertNull($context->getFrozenUnitPrice(71));
+    }
+
+    public function testFinalReloadedQuoteAndSavedOrderStayBoundUntilCommit(): void
+    {
+        $context = new ExecutionContext();
+        $preparedQuote = $this->quote(41);
+        $submittedQuote = $this->quote('41');
+        $order = $this->createStub(OrderInterface::class);
+        $order->method('getEntityId')->willReturn(200);
+        $prePlaceCalls = 0;
+        $postSaveCalls = 0;
+
+        $context->execute(
+            7,
+            self::INTENT_HASH,
+            static function () use (
+                $context,
+                $preparedQuote,
+                $submittedQuote,
+                $order,
+                &$prePlaceCalls,
+                &$postSaveCalls
+            ): void {
+                $context->setPreSubmitValidator(
+                    static function (Quote $candidate) use (
+                        $submittedQuote
+                    ): void {
+                        self::assertSame($submittedQuote, $candidate);
+                    }
+                );
+                $context->setPrePlaceOrderValidator(
+                    static function (
+                        Quote $candidateQuote,
+                        OrderInterface $candidateOrder
+                    ) use (
+                        $submittedQuote,
+                        $order,
+                        &$prePlaceCalls
+                    ): void {
+                        ++$prePlaceCalls;
+                        self::assertSame(
+                            $submittedQuote,
+                            $candidateQuote
+                        );
+                        self::assertSame($order, $candidateOrder);
+                    }
+                );
+                $context->setPostSaveOrderValidator(
+                    static function (OrderInterface $candidate) use (
+                        $order,
+                        &$postSaveCalls
+                    ): string {
+                        ++$postSaveCalls;
+                        self::assertSame($order, $candidate);
+
+                        return str_repeat('b', 64);
+                    }
+                );
+                $context->markQuote($preparedQuote);
+                $context->validateBeforeSubmit($submittedQuote);
+                $context->validateBeforePlace($order);
+                self::assertTrue($context->isTrustedOrder($order));
+                $context->validateBeforePlace($order);
+                $context->validateAfterSave($order);
+                $context->validateBeforeCommit(200, $order);
+            }
+        );
+
+        self::assertSame(2, $prePlaceCalls);
+        self::assertSame(2, $postSaveCalls);
+        self::assertFalse($context->isTrustedOrder($order));
+    }
+
     private static function throwNativeQuoteFailure(): void
     {
         throw new \RuntimeException('native quote failure');
@@ -219,7 +319,7 @@ class ExecutionContextTest extends TestCase
         $id,
         ?int $exchangeId = 7,
         ?string $intentHash = self::INTENT_HASH
-    ): CartInterface
+    ): Quote
     {
         /** @var Quote $quote */
         $quote = (new \ReflectionClass(Quote::class))

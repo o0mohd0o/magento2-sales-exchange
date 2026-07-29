@@ -4,7 +4,7 @@
 
 Before the first public tag, there is no supported release; fixes land on the
 development branch. After publication, fixes are provided for the latest tagged
-`0.1.x` release while the project remains pre-1.0. Merchants should run the
+`0.2.x` release while the project remains pre-1.0. Merchants should run the
 latest security patch of a supported Magento release and the latest module tag.
 
 ## Reporting a vulnerability

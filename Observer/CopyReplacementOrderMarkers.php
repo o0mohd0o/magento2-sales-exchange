@@ -70,6 +70,7 @@ class CopyReplacementOrderMarkers implements ObserverInterface
                 __('The trusted replacement quote markers are invalid.')
             );
         }
+        $this->executionContext->validateBeforeSubmit($quote);
         $orderExchangeId = $this->normalizeId(
             $order->getData(Marker::EXCHANGE_ID)
         );
@@ -88,6 +89,7 @@ class CopyReplacementOrderMarkers implements ObserverInterface
 
         $order->setData(Marker::EXCHANGE_ID, $exchangeId);
         $order->setData(Marker::INTENT_HASH, $intentHash);
+        $this->executionContext->validateBeforePlace($order);
     }
 
     /**

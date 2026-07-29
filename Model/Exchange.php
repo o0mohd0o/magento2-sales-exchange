@@ -98,6 +98,22 @@ class Exchange extends AbstractModel implements ExchangeInterface
         return $this->setData(self::BASE_CURRENCY_CODE, $currencyCode);
     }
 
+    public function getCatalogPricesIncludeTax(): ?bool
+    {
+        $value = $this->getData(self::CATALOG_PRICES_INCLUDE_TAX);
+
+        return $value === null ? null : (bool)$value;
+    }
+
+    public function setCatalogPricesIncludeTax(
+        ?bool $includeTax
+    ): ExchangeInterface {
+        return $this->setData(
+            self::CATALOG_PRICES_INCLUDE_TAX,
+            $includeTax
+        );
+    }
+
     public function getExchangeStatus(): string
     {
         return (string)$this->getData(self::EXCHANGE_STATUS);

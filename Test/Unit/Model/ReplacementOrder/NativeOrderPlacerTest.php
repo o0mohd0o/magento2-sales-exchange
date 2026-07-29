@@ -9,10 +9,15 @@ declare(strict_types=1);
 namespace Bonlineco\SalesExchange\Test\Unit\Model\ReplacementOrder;
 
 use Bonlineco\SalesExchange\Api\Data\ExchangeInterface;
+use Bonlineco\SalesExchange\Api\Data\ReplacementItemInterface;
+use Bonlineco\SalesExchange\Exception\InvariantViolationException;
+use Bonlineco\SalesExchange\Model\Order\FreshOrderLoader;
 use Bonlineco\SalesExchange\Model\Payment\Replacement as ReplacementPayment;
+use Bonlineco\SalesExchange\Model\ReplacementOrder\ConvertedOrderValidator;
 use Bonlineco\SalesExchange\Model\ReplacementOrder\ExecutionContext;
 use Bonlineco\SalesExchange\Model\ReplacementOrder\Marker;
 use Bonlineco\SalesExchange\Model\ReplacementOrder\NativeOrderPlacer;
+use Bonlineco\SalesExchange\Model\ReplacementOrder\NativeOrderValidator;
 use Bonlineco\SalesExchange\Model\ReplacementOrder\QuoteValidator;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Select;
@@ -23,6 +28,7 @@ use Magento\Quote\Api\Data\PaymentInterfaceFactory;
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\ResourceModel\Quote as QuoteResource;
 use Magento\Sales\Api\Data\OrderInterface;
+use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -35,17 +41,81 @@ class NativeOrderPlacerTest extends TestCase
     {
         $context = new ExecutionContext();
         $quote = $this->inactiveQuote();
+        $submittedQuote = $this->inactiveQuote();
+        $submittedQuote->setIsActive(true);
         $exchange = $this->exchange();
         $originalOrder = $this->createMock(OrderInterface::class);
-        $replacementRows = [['entity_id' => 71]];
+        $savedOrder = $this->createStub(OrderInterface::class);
+        $savedOrder->method('getEntityId')->willReturn(200);
+        $replacementRows = [[
+            ReplacementItemInterface::ENTITY_ID => 71,
+            ReplacementItemInterface::PRODUCT_ID => 21,
+            ReplacementItemInterface::SKU => 'replacement-sku',
+            ReplacementItemInterface::NAME => 'Replacement',
+            ReplacementItemInterface::QTY => '1.0000',
+            ReplacementItemInterface::UNIT_PRICE_AMOUNT => '12999.0000',
+            ReplacementItemInterface::ROW_TOTAL_AMOUNT => '12999.0000',
+        ]];
         $validator = $this->validator(
-            1,
+            2,
             $context,
             $quote,
             $originalOrder,
             $exchange,
-            $replacementRows
+            $replacementRows,
+            $submittedQuote
         );
+        $convertedValidator = $this->createMock(
+            ConvertedOrderValidator::class
+        );
+        $convertedValidator->expects(self::once())
+            ->method('execute')
+            ->with($submittedQuote, $savedOrder);
+        $nativeValidator = $this->createMock(
+            NativeOrderValidator::class
+        );
+        $snapshotCalls = 0;
+        $nativeValidator->expects(self::exactly(2))
+            ->method('snapshot')
+            ->willReturnCallback(
+                static function (
+                    OrderInterface $candidate,
+                    OrderInterface $actualOriginal,
+                    ExchangeInterface $actualExchange,
+                    array $actualRows,
+                    string $actualIntent,
+                    int $actualQuoteId
+                ) use (
+                    &$snapshotCalls,
+                    $savedOrder,
+                    $originalOrder,
+                    $exchange,
+                    $replacementRows
+                ): array {
+                    ++$snapshotCalls;
+                    if ($snapshotCalls === 1) {
+                        self::assertSame($savedOrder, $candidate);
+                    } else {
+                        self::assertNotSame($savedOrder, $candidate);
+                        self::assertSame(
+                            200,
+                            (int)$candidate->getEntityId()
+                        );
+                    }
+                    self::assertSame($originalOrder, $actualOriginal);
+                    self::assertSame($exchange, $actualExchange);
+                    self::assertSame($replacementRows, $actualRows);
+                    self::assertSame(
+                        self::INTENT_HASH,
+                        $actualIntent
+                    );
+                    self::assertSame(41, $actualQuoteId);
+
+                    return [
+                        'snapshot_hash' => str_repeat('b', 64),
+                    ];
+                }
+            );
         $payment = $this->createMock(PaymentInterface::class);
         $payment->expects(self::once())
             ->method('setMethod')
@@ -73,9 +143,20 @@ class NativeOrderPlacerTest extends TestCase
             ->method('placeOrder')
             ->with(41, $payment)
             ->willReturnCallback(
-                static function () use ($context, $quote): int {
+                static function () use (
+                    $context,
+                    $quote,
+                    $submittedQuote,
+                    $savedOrder
+                ): int {
                     self::assertTrue((bool)$quote->getIsActive());
                     self::assertTrue($context->isTrustedQuote($quote));
+                    self::assertTrue(
+                        $context->hasPrePlaceOrderValidator()
+                    );
+                    $context->validateBeforeSubmit($submittedQuote);
+                    $context->validateBeforePlace($savedOrder);
+                    $context->validateAfterSave($savedOrder);
 
                     return 200;
                 }
@@ -107,7 +188,9 @@ class NativeOrderPlacerTest extends TestCase
             $cartManagement,
             $quoteRepository,
             $paymentFactory,
-            $this->quoteResource($connection)
+            $this->quoteResource($connection),
+            $convertedValidator,
+            $nativeValidator
         )->execute(
             $quote,
             $originalOrder,
@@ -131,7 +214,15 @@ class NativeOrderPlacerTest extends TestCase
         $quote = $this->inactiveQuote();
         $exchange = $this->exchange();
         $originalOrder = $this->createMock(OrderInterface::class);
-        $replacementRows = [['entity_id' => 71]];
+        $replacementRows = [[
+            ReplacementItemInterface::ENTITY_ID => 71,
+            ReplacementItemInterface::PRODUCT_ID => 21,
+            ReplacementItemInterface::SKU => 'replacement-sku',
+            ReplacementItemInterface::NAME => 'Replacement',
+            ReplacementItemInterface::QTY => '1.0000',
+            ReplacementItemInterface::UNIT_PRICE_AMOUNT => '12999.0000',
+            ReplacementItemInterface::ROW_TOTAL_AMOUNT => '12999.0000',
+        ]];
         $validator = $this->validator(
             1,
             $context,
@@ -209,21 +300,107 @@ class NativeOrderPlacerTest extends TestCase
         self::assertFalse($context->isTrustedQuote($quote));
     }
 
+    public function testDifferentPersistenceAdaptersFailBeforeTransaction(): void
+    {
+        $context = new ExecutionContext();
+        $quote = $this->inactiveQuote();
+        $exchange = $this->exchange();
+        $originalOrder = $this->createMock(OrderInterface::class);
+        $replacementRows = [[
+            ReplacementItemInterface::ENTITY_ID => 71,
+            ReplacementItemInterface::PRODUCT_ID => 21,
+            ReplacementItemInterface::SKU => 'replacement-sku',
+            ReplacementItemInterface::NAME => 'Replacement',
+            ReplacementItemInterface::QTY => '1.0000',
+            ReplacementItemInterface::UNIT_PRICE_AMOUNT => '12999.0000',
+            ReplacementItemInterface::ROW_TOTAL_AMOUNT => '12999.0000',
+        ]];
+        $quoteConnection = $this->createMock(AdapterInterface::class);
+        $quoteConnection->expects(self::never())
+            ->method('beginTransaction');
+        $orderConnection = $this->createMock(AdapterInterface::class);
+        $orderResource = $this->createMock(OrderResource::class);
+        $orderResource->method('getConnection')
+            ->willReturn($orderConnection);
+        $cartManagement = $this->createMock(
+            CartManagementInterface::class
+        );
+        $cartManagement->expects(self::never())->method('placeOrder');
+        $payment = $this->createMock(PaymentInterface::class);
+        $payment->method('setMethod')->willReturnSelf();
+        $this->expectException(InvariantViolationException::class);
+        $this->expectExceptionMessage(
+            'Replacement quotes and orders must share one database transaction.'
+        );
+
+        $this->placer(
+            $context,
+            $this->validator(
+                1,
+                $context,
+                $quote,
+                $originalOrder,
+                $exchange,
+                $replacementRows
+            ),
+            $cartManagement,
+            $this->createMock(CartRepositoryInterface::class),
+            $this->paymentFactory($payment),
+            $this->quoteResource($quoteConnection),
+            null,
+            null,
+            $orderResource
+        )->execute(
+            $quote,
+            $originalOrder,
+            $exchange,
+            $replacementRows,
+            self::INTENT_HASH
+        );
+    }
+
     private function placer(
         ExecutionContext $context,
         QuoteValidator $validator,
         CartManagementInterface $cartManagement,
         CartRepositoryInterface $quoteRepository,
         PaymentInterfaceFactory $paymentFactory,
-        QuoteResource $quoteResource
+        QuoteResource $quoteResource,
+        ?ConvertedOrderValidator $convertedValidator = null,
+        ?NativeOrderValidator $nativeOrderValidator = null,
+        ?OrderResource $orderResource = null,
+        ?FreshOrderLoader $freshOrderLoader = null
     ): NativeOrderPlacer {
+        if ($orderResource === null) {
+            $orderResource = $this->createMock(OrderResource::class);
+            $orderResource->method('getConnection')->willReturn(
+                $quoteResource->getConnection()
+            );
+        }
+        if ($freshOrderLoader === null) {
+            $persistedOrder = $this->createStub(OrderInterface::class);
+            $persistedOrder->method('getEntityId')->willReturn(200);
+            $freshOrderLoader = $this->createMock(
+                FreshOrderLoader::class
+            );
+            $freshOrderLoader->method('execute')
+                ->with(200)
+                ->willReturn($persistedOrder);
+        }
+
         return new NativeOrderPlacer(
             $context,
             $validator,
             $cartManagement,
             $quoteRepository,
             $paymentFactory,
-            $quoteResource
+            $quoteResource,
+            $orderResource,
+            $freshOrderLoader,
+            $convertedValidator
+                ?? $this->createMock(ConvertedOrderValidator::class),
+            $nativeOrderValidator
+                ?? $this->createMock(NativeOrderValidator::class)
         );
     }
 
@@ -249,30 +426,52 @@ class NativeOrderPlacerTest extends TestCase
         Quote $quote,
         OrderInterface $originalOrder,
         ExchangeInterface $exchange,
-        array $replacementRows
+        array $replacementRows,
+        ?Quote $submittedQuote = null
     ): QuoteValidator {
         $calls = 0;
         $validator = $this->createMock(QuoteValidator::class);
         $validator->expects(self::exactly($expectedCalls))
             ->method('assertPrepared')
-            ->with(
-                $quote,
-                $originalOrder,
-                $exchange,
-                $replacementRows,
-                self::INTENT_HASH
-            )
             ->willReturnCallback(
-                static function () use (
+                static function (
+                    Quote $actualQuote,
+                    OrderInterface $actualOriginalOrder,
+                    ExchangeInterface $actualExchange,
+                    array $actualRows,
+                    string $actualIntentHash,
+                    bool $expectedActive = false
+                ) use (
                     &$calls,
                     $context,
-                    $quote
+                    $quote,
+                    $originalOrder,
+                    $exchange,
+                    $replacementRows,
+                    $submittedQuote
                 ): void {
+                    $expectedQuote = $calls === 0
+                        ? $quote
+                        : ($submittedQuote ?? $quote);
+                    self::assertSame($expectedQuote, $actualQuote);
+                    self::assertSame(
+                        $originalOrder,
+                        $actualOriginalOrder
+                    );
+                    self::assertSame($exchange, $actualExchange);
+                    self::assertSame($replacementRows, $actualRows);
+                    self::assertSame(
+                        self::INTENT_HASH,
+                        $actualIntentHash
+                    );
                     ++$calls;
-                    self::assertFalse((bool)$quote->getIsActive());
+                    self::assertSame(
+                        $expectedActive,
+                        (bool)$actualQuote->getIsActive()
+                    );
                     self::assertSame(
                         $calls > 1,
-                        $context->isTrustedQuote($quote)
+                        $context->isTrustedQuote($actualQuote)
                     );
                 }
             );

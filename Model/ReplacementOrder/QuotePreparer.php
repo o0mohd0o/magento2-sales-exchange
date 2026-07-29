@@ -124,7 +124,8 @@ class QuotePreparer
                     $replacementRows,
                     $intentHash
                 );
-            }
+            },
+            $replacementRows
         );
 
         return $quote;
@@ -167,9 +168,7 @@ class QuotePreparer
                 __('The trusted replacement delivery rate is unavailable.')
             );
         }
-        $quote->getPayment()->importData([
-            'method' => ReplacementPayment::CODE,
-        ]);
+        $this->configurePayment($quote);
         $quote->setCouponCode(null)
             ->setAppliedRuleIds(null)
             ->setTotalsCollectedFlag(false)
@@ -197,6 +196,23 @@ class QuotePreparer
         );
 
         return $quote;
+    }
+
+    /**
+     * Attach the payment to a new, unsaved quote before importing its method.
+     *
+     * Magento's getPayment() can return the empty first collection item for an
+     * unsaved quote without assigning the quote back to that payment. Calling
+     * importData() in that state dereferences a null quote while resolving the
+     * payment method.
+     */
+    private function configurePayment(Quote $quote): void
+    {
+        $payment = $quote->getPayment();
+        $payment->setQuote($quote);
+        $payment->importData([
+            'method' => ReplacementPayment::CODE,
+        ]);
     }
 
     private function configureCurrency(

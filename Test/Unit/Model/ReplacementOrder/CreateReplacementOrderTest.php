@@ -45,6 +45,7 @@ use Bonlineco\SalesExchange\Model\ResourceModel\ReplacementItem as ReplacementIt
 use Bonlineco\SalesExchange\Model\ResourceModel\ReturnItem as ReturnItemResource;
 use Bonlineco\SalesExchange\Model\VersionGuard;
 use Magento\Framework\Event\ManagerInterface;
+use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Quote\Model\Quote;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
@@ -70,6 +71,58 @@ class CreateReplacementOrderTest extends TestCase
     private int $outerOrderLockGeneration = 0;
 
     private ?int $placementOrderLockGeneration = null;
+
+    public function testPhpErrorIsLoggedAndWrappedWithoutMaskingTypeError(): void
+    {
+        $command = $this->commandWithoutConstructor();
+        $initial = $this->createMock(ExchangeInterface::class);
+        $initial->method('getOriginalOrderId')->willReturn(100);
+        $repository = $this->createMock(ExchangeRepositoryInterface::class);
+        $repository->method('getById')->willReturn($initial);
+        $this->setProperty($command, 'exchangeRepository', $repository);
+
+        $error = new \Error('quote payment failed');
+        $mutex = $this->createMock(OrderMutexInterface::class);
+        $mutex->expects(self::once())
+            ->method('execute')
+            ->willReturnCallback(
+                static function () use ($error): void {
+                    throw $error;
+                }
+            );
+        $this->setProperty($command, 'orderMutex', $mutex);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())
+            ->method('critical')
+            ->with(
+                'Unexpected exchange replacement order failure.',
+                self::callback(
+                    static fn (array $context): bool =>
+                        ($context['exception'] ?? null) === $error
+                        && ($context['exchange_id'] ?? null) === 7
+                )
+            );
+        $this->setProperty($command, 'logger', $logger);
+
+        try {
+            $command->execute(7, 1, 5);
+            self::fail('The unexpected PHP error must be wrapped.');
+        } catch (CouldNotSaveException $exception) {
+            self::assertSame(
+                'The exchange replacement order could not be created.',
+                $exception->getMessage()
+            );
+            self::assertInstanceOf(
+                \RuntimeException::class,
+                $exception->getPrevious()
+            );
+            self::assertSame(
+                $error,
+                $exception->getPrevious()?->getPrevious()
+            );
+        }
+    }
 
     /**
      * @dataProvider oneClickSagaProvider

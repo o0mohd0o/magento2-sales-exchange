@@ -239,9 +239,23 @@ class CreateReplacementOrder implements CreateReplacementOrderInterface
             if ($exception instanceof LocalizedException) {
                 throw $exception;
             }
+            $this->logger->critical(
+                'Unexpected exchange replacement order failure.',
+                [
+                    'exception' => $exception,
+                    'exchange_id' => $exchangeId,
+                ]
+            );
+            $cause = $exception instanceof \Exception
+                ? $exception
+                : new \RuntimeException(
+                    $exception->getMessage(),
+                    (int)$exception->getCode(),
+                    $exception
+                );
             throw new CouldNotSaveException(
                 __('The exchange replacement order could not be created.'),
-                $exception
+                $cause
             );
         }
 

@@ -21,6 +21,8 @@ use Magento\Catalog\Model\Product\Type;
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\Quote\Item;
 use Magento\Sales\Api\Data\OrderInterface;
+use Magento\Tax\Helper\Data as TaxHelper;
+use Magento\Tax\Model\Config as TaxConfig;
 
 /**
  * Fail closed unless core quote totals exactly represent the frozen intent.
@@ -35,16 +37,24 @@ class QuoteValidator
 
     private DecimalMath $quantityMath;
 
+    private TaxConfig $taxConfig;
+
+    private TaxHelper $taxHelper;
+
     public function __construct(
         ProductRepositoryInterface $productRepository,
         AddressSnapshotCopier $addressSnapshotCopier,
         DecimalMath $moneyMath,
-        DecimalMath $quantityMath
+        DecimalMath $quantityMath,
+        TaxConfig $taxConfig,
+        TaxHelper $taxHelper
     ) {
         $this->productRepository = $productRepository;
         $this->addressSnapshotCopier = $addressSnapshotCopier;
         $this->moneyMath = $moneyMath;
         $this->quantityMath = $quantityMath;
+        $this->taxConfig = $taxConfig;
+        $this->taxHelper = $taxHelper;
     }
 
     /**
@@ -55,24 +65,38 @@ class QuoteValidator
         OrderInterface $originalOrder,
         ExchangeInterface $exchange,
         array $replacementRows,
-        string $intentHash
+        string $intentHash,
+        bool $expectedActive = false
     ): void {
         $this->assertQuoteIdentity(
             $quote,
             $originalOrder,
             $exchange,
-            $intentHash
+            $intentHash,
+            $expectedActive
         );
         $rows = $this->indexRows($replacementRows);
-        $this->assertItems($quote, $rows, $exchange);
-        $this->assertTotals($quote, $exchange);
+        $pricesIncludeTax = $this->resolvePricesIncludeTax($exchange);
+        $itemTotals = $this->assertItems(
+            $quote,
+            $rows,
+            $exchange,
+            $pricesIncludeTax
+        );
+        $this->assertTotals(
+            $quote,
+            $exchange,
+            $pricesIncludeTax,
+            $itemTotals
+        );
     }
 
     private function assertQuoteIdentity(
         Quote $quote,
         OrderInterface $originalOrder,
         ExchangeInterface $exchange,
-        string $intentHash
+        string $intentHash,
+        bool $expectedActive
     ): void {
         if (!preg_match('/^[a-f0-9]{64}$/D', $intentHash)
             || (int)$quote->getData(Marker::EXCHANGE_ID)
@@ -87,7 +111,8 @@ class QuoteValidator
                 __('The prepared quote markers do not match the replacement intent.')
             );
         }
-        if ((bool)$quote->getIsActive()
+        if ((bool)$quote->getIsActive() !== $expectedActive
+            || (bool)$quote->getIsSuperMode()
             || $quote->getOrigOrderId() !== null
             || (int)$quote->getStoreId() !== $exchange->getStoreId()
             || (int)$originalOrder->getEntityId()
@@ -172,13 +197,26 @@ class QuoteValidator
     /**
      * @param array<int, array<string, mixed>> $rows
      */
+    /**
+     * @return array{
+     *     subtotal: string,
+     *     base_subtotal: string,
+     *     tax: string,
+     *     base_tax: string
+     * }
+     */
     private function assertItems(
         Quote $quote,
         array $rows,
-        ExchangeInterface $exchange
-    ): void {
+        ExchangeInterface $exchange,
+        bool $pricesIncludeTax
+    ): array {
         $seen = [];
-        $calculatedSubtotal = '0.0000';
+        $approvedTotal = '0.0000';
+        $subtotal = '0.0000';
+        $baseSubtotal = '0.0000';
+        $tax = '0.0000';
+        $baseTax = '0.0000';
         $items = $quote->getAllVisibleItems();
         if (count($items) !== count($rows)) {
             throw new InvariantViolationException(
@@ -206,27 +244,59 @@ class QuoteValidator
             $this->assertItemSnapshot(
                 $item,
                 $row,
-                (int)$exchange->getStoreId()
+                (int)$exchange->getStoreId(),
+                $pricesIncludeTax
             );
-            $rowTotal = $this->moneyMath->normalize(
-                (string)$item->getRowTotal()
+            $approvedRowTotal = $this->moneyMath->assertNonNegative(
+                (string)($pricesIncludeTax
+                    ? $item->getRowTotalInclTax()
+                    : $item->getRowTotal()),
+                'Prepared replacement row total'
             );
             if ($this->moneyMath->compare(
-                $rowTotal,
+                $approvedRowTotal,
                 (string)$row[ReplacementItemInterface::ROW_TOTAL_AMOUNT]
             ) !== 0) {
                 throw new InvariantViolationException(
                     __('A prepared quote row total drifted from its approved amount.')
                 );
             }
-            $calculatedSubtotal = $this->moneyMath->add(
-                $calculatedSubtotal,
-                $rowTotal
+            $approvedTotal = $this->moneyMath->add(
+                $approvedTotal,
+                $approvedRowTotal
+            );
+            $subtotal = $this->moneyMath->add(
+                $subtotal,
+                $this->moneyMath->assertNonNegative(
+                    (string)$item->getRowTotal(),
+                    'Prepared replacement net row total'
+                )
+            );
+            $baseSubtotal = $this->moneyMath->add(
+                $baseSubtotal,
+                $this->moneyMath->assertNonNegative(
+                    (string)$item->getBaseRowTotal(),
+                    'Prepared replacement base net row total'
+                )
+            );
+            $tax = $this->moneyMath->add(
+                $tax,
+                $this->moneyMath->assertNonNegative(
+                    (string)$item->getTaxAmount(),
+                    'Prepared replacement row tax'
+                )
+            );
+            $baseTax = $this->moneyMath->add(
+                $baseTax,
+                $this->moneyMath->assertNonNegative(
+                    (string)$item->getBaseTaxAmount(),
+                    'Prepared replacement base row tax'
+                )
             );
         }
         if (count($seen) !== count($rows)
             || $this->moneyMath->compare(
-                $calculatedSubtotal,
+                $approvedTotal,
                 $exchange->getReplacementAmount()
             ) !== 0
         ) {
@@ -234,6 +304,13 @@ class QuoteValidator
                 __('The prepared quote does not represent every frozen replacement row.')
             );
         }
+
+        return [
+            'subtotal' => $subtotal,
+            'base_subtotal' => $baseSubtotal,
+            'tax' => $tax,
+            'base_tax' => $baseTax,
+        ];
     }
 
     /**
@@ -242,7 +319,8 @@ class QuoteValidator
     private function assertItemSnapshot(
         Item $item,
         array $row,
-        int $storeId
+        int $storeId,
+        bool $pricesIncludeTax
     ): void {
         $productId = (int)$row[ReplacementItemInterface::PRODUCT_ID];
         $product = $this->productRepository->getById(
@@ -278,13 +356,24 @@ class QuoteValidator
                 (string)$item->getQty(),
                 (string)$row[ReplacementItemInterface::QTY]
             ) === 0
-            && $this->moneyMath->compare(
-                (string)$item->getCustomPrice(),
-                (string)$row[ReplacementItemInterface::UNIT_PRICE_AMOUNT]
-            ) === 0
+            && $item->hasCustomPrice()
+            && trim((string)$item->getCustomPrice()) !== ''
+            && trim((string)$item->getOriginalCustomPrice()) !== ''
             && $this->moneyMath->compare(
                 (string)$item->getOriginalCustomPrice(),
                 (string)$row[ReplacementItemInterface::UNIT_PRICE_AMOUNT]
+            ) === 0
+            && $this->moneyMath->compare(
+                (string)($pricesIncludeTax
+                    ? $item->getPriceInclTax()
+                    : $item->getConvertedPrice()),
+                (string)$row[ReplacementItemInterface::UNIT_PRICE_AMOUNT]
+            ) === 0
+            && $this->moneyMath->compare(
+                (string)($pricesIncludeTax
+                    ? $item->getRowTotalInclTax()
+                    : $item->getRowTotal()),
+                (string)$row[ReplacementItemInterface::ROW_TOTAL_AMOUNT]
             ) === 0
             && $this->moneyMath->compare(
                 (string)$item->getDiscountAmount(),
@@ -303,7 +392,9 @@ class QuoteValidator
 
     private function assertTotals(
         Quote $quote,
-        ExchangeInterface $exchange
+        ExchangeInterface $exchange,
+        bool $pricesIncludeTax,
+        array $items
     ): void {
         $address = $quote->getShippingAddress();
         $subtotal = $this->moneyMath->assertNonNegative(
@@ -327,9 +418,13 @@ class QuoteValidator
             $baseSubtotal,
             $baseTax
         );
+        $grandTotal = $this->moneyMath->assertNonNegative(
+            (string)$quote->getGrandTotal(),
+            'Replacement quote grand total'
+        );
 
         $matches = $this->moneyMath->compare(
-            $subtotal,
+            $pricesIncludeTax ? $grandTotal : $subtotal,
             $exchange->getReplacementAmount()
         ) === 0
             && $this->moneyMath->compare(
@@ -337,7 +432,23 @@ class QuoteValidator
                 $subtotal
             ) === 0
             && $this->moneyMath->compare(
-                (string)$quote->getGrandTotal(),
+                $subtotal,
+                $items['subtotal']
+            ) === 0
+            && $this->moneyMath->compare(
+                $baseSubtotal,
+                $items['base_subtotal']
+            ) === 0
+            && $this->moneyMath->compare(
+                $tax,
+                $items['tax']
+            ) === 0
+            && $this->moneyMath->compare(
+                $baseTax,
+                $items['base_tax']
+            ) === 0
+            && $this->moneyMath->compare(
+                $grandTotal,
                 $expectedGrandTotal
             ) === 0
             && $this->moneyMath->compare(
@@ -388,5 +499,45 @@ class QuoteValidator
                 )
             );
         }
+    }
+
+    /**
+     * Require the current quote interpretation to match the frozen approval.
+     */
+    private function resolvePricesIncludeTax(
+        ExchangeInterface $exchange
+    ): bool {
+        $pricesIncludeTax = $exchange->getCatalogPricesIncludeTax();
+        if ($pricesIncludeTax === null) {
+            throw new InvariantViolationException(
+                __(
+                    'The exchange has no frozen catalog tax mode. '
+                    . 'Cancel and recreate this legacy exchange before placement.'
+                )
+            );
+        }
+        if ($this->taxConfig->priceIncludesTax($exchange->getStoreId())
+            !== $pricesIncludeTax
+        ) {
+            throw new InvariantViolationException(
+                __(
+                    'The store catalog tax configuration changed after '
+                    . 'replacement pricing was approved. Cancel and recreate '
+                    . 'the exchange before placement.'
+                )
+            );
+        }
+        if (!$this->taxHelper->applyTaxOnCustomPrice(
+            $exchange->getStoreId()
+        )) {
+            throw new InvariantViolationException(
+                __(
+                    'Replacement orders require Magento tax calculation '
+                    . 'to apply tax to custom prices.'
+                )
+            );
+        }
+
+        return $pricesIncludeTax;
     }
 }

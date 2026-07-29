@@ -311,6 +311,11 @@
                 type="Bonlineco\SalesExchange\Plugin\OrderServicePlugin"
                 sortOrder="-1000"/>
     </type>
+    <type name="Magento\Sales\Model\OrderRepository">
+        <plugin name="bonlineco_sales_exchange_validate_replacement_order_save"
+                type="Bonlineco\SalesExchange\Plugin\ValidateReplacementOrderSavePlugin"
+                sortOrder="1000000"/>
+    </type>
     <type name="Magento\Sales\Model\ShipOrder">
         <plugin name="bonlineco_sales_exchange_native_full_shipment"
                 type="Bonlineco\SalesExchange\Plugin\ShipOrderPlugin"
@@ -327,5 +332,22 @@
     <type name="Magento\Quote\Model\ValidationRules\MinimumAmountValidationRule">
         <plugin name="bonlineco_sales_exchange_trusted_minimum_amount"
                 type="Bonlineco\SalesExchange\Plugin\MinimumAmountValidationPlugin"/>
+    </type>
+    <type name="Magento\Quote\Model\Quote\Address\Total\Subtotal">
+        <plugin name="bonlineco_sales_exchange_restore_frozen_price"
+                type="Bonlineco\SalesExchange\Plugin\RestoreReplacementQuotePricePlugin"
+                sortOrder="1000"/>
+    </type>
+    <type name="Bonlineco\SalesExchange\Plugin\RestoreReplacementQuotePricePlugin">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
+    </type>
+    <type name="Bonlineco\SalesExchange\Model\ReplacementOrder\ConvertedOrderValidator">
+        <arguments>
+            <argument name="quantityMath"
+                      xsi:type="object">Bonlineco\SalesExchange\Model\Math\QuantityDecimalMath</argument>
+        </arguments>
     </type>
 </config>

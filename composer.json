@@ -2,7 +2,7 @@
     "name": "bonlineco/module-sales-exchange",
     "description": "Admin-first exchange order workflow for Magento Open Source",
     "type": "magento2-module",
-    "version": "0.1.3",
+    "version": "0.2.0",
     "license": "MIT",
     "keywords": [
         "exchange order",
@@ -37,6 +37,7 @@
         "magento/module-sales-inventory": "^100.4.3",
         "magento/module-shipping": "^100.4.6",
         "magento/module-store": "^101.1.6",
+        "magento/module-tax": "^100.4.6",
         "magento/module-ui": "^101.2.6"
     },
     "require-dev": {

@@ -143,8 +143,25 @@ class NativeOrderValidator
         );
         $this->assertLifecycle($order, $requireCancelled);
         $rows = $this->indexRows($replacementRows, $exchange);
-        $items = $this->snapshotItems($order, $rows, $requireCancelled);
-        $totals = $this->snapshotTotals($order, $exchange, $items['totals']);
+        $includeTaxFieldsInFingerprint = $exchange
+            ->getCatalogPricesIncludeTax() === true;
+        $pricesIncludeTax = $this->resolvePricesIncludeTax(
+            $order,
+            $exchange
+        );
+        $items = $this->snapshotItems(
+            $order,
+            $rows,
+            $requireCancelled,
+            $pricesIncludeTax,
+            $includeTaxFieldsInFingerprint
+        );
+        $totals = $this->snapshotTotals(
+            $order,
+            $exchange,
+            $items['totals'],
+            $pricesIncludeTax
+        );
         $addresses = $this->addressValidator->snapshot(
             $originalOrder,
             $order
@@ -347,7 +364,9 @@ class NativeOrderValidator
     private function snapshotItems(
         OrderInterface $order,
         array $rows,
-        bool $requireCancelled
+        bool $requireCancelled,
+        bool $pricesIncludeTax,
+        bool $includeTaxFieldsInFingerprint
     ): array {
         $itemIds = [];
         $quantities = [];
@@ -411,6 +430,30 @@ class NativeOrderValidator
                 (string)$item->getRowTotal(),
                 'Native replacement row total'
             );
+            $priceInclTax = $pricesIncludeTax
+                ? $this->moneyMath->assertNonNegative(
+                    (string)$item->getPriceInclTax(),
+                    'Native replacement item price including tax'
+                )
+                : null;
+            $rowTotalInclTax = $pricesIncludeTax
+                ? $this->moneyMath->assertNonNegative(
+                    (string)$item->getRowTotalInclTax(),
+                    'Native replacement row total including tax'
+                )
+                : null;
+            $basePriceInclTax = $pricesIncludeTax
+                ? $this->moneyMath->assertNonNegative(
+                    (string)$item->getBasePriceInclTax(),
+                    'Native replacement base item price including tax'
+                )
+                : null;
+            $baseRowTotalInclTax = $pricesIncludeTax
+                ? $this->moneyMath->assertNonNegative(
+                    (string)$item->getBaseRowTotalInclTax(),
+                    'Native replacement base row total including tax'
+                )
+                : null;
             $basePrice = $this->moneyMath->assertNonNegative(
                 (string)$item->getBasePrice(),
                 'Native replacement base item price'
@@ -440,11 +483,11 @@ class NativeOrderValidator
                     (string)$row[ReplacementItemInterface::QTY]
                 ) === 0
                 && $this->moneyMath->compare(
-                    $price,
+                    $pricesIncludeTax ? $priceInclTax : $price,
                     (string)$row[ReplacementItemInterface::UNIT_PRICE_AMOUNT]
                 ) === 0
                 && $this->moneyMath->compare(
-                    $rowTotal,
+                    $pricesIncludeTax ? $rowTotalInclTax : $rowTotal,
                     (string)$row[ReplacementItemInterface::ROW_TOTAL_AMOUNT]
                 ) === 0
                 && $this->moneyMath->compare(
@@ -464,7 +507,7 @@ class NativeOrderValidator
             $orderItemId = (int)$item->getItemId();
             $itemIds[$replacementItemId] = $orderItemId;
             $quantities[$orderItemId] = $quantity;
-            $fingerprint[] = [
+            $itemFingerprint = [
                 'replacement_item_id' => $replacementItemId,
                 'order_item_id' => $orderItemId,
                 'product_id' => (int)$item->getProductId(),
@@ -478,6 +521,15 @@ class NativeOrderValidator
                 'tax' => $itemTax,
                 'base_tax' => $itemBaseTax,
             ];
+            if ($includeTaxFieldsInFingerprint) {
+                $itemFingerprint['price_incl_tax'] = $priceInclTax;
+                $itemFingerprint['base_price_incl_tax'] =
+                    $basePriceInclTax;
+                $itemFingerprint['row_total_incl_tax'] = $rowTotalInclTax;
+                $itemFingerprint['base_row_total_incl_tax'] =
+                    $baseRowTotalInclTax;
+            }
+            $fingerprint[] = $itemFingerprint;
             $subtotal = $this->moneyMath->add($subtotal, $rowTotal);
             $baseSubtotal = $this->moneyMath->add(
                 $baseSubtotal,
@@ -521,7 +573,8 @@ class NativeOrderValidator
     private function snapshotTotals(
         OrderInterface $order,
         ExchangeInterface $exchange,
-        array $items
+        array $items,
+        bool $pricesIncludeTax
     ): array {
         $subtotal = $this->moneyMath->assertNonNegative(
             (string)$order->getSubtotal(),
@@ -548,7 +601,7 @@ class NativeOrderValidator
             'Native replacement base grand total'
         );
         $matches = $this->moneyMath->compare(
-            $subtotal,
+            $pricesIncludeTax ? $amount : $subtotal,
             $exchange->getReplacementAmount()
         ) === 0
             && $this->moneyMath->compare($subtotal, $items['subtotal']) === 0
@@ -599,6 +652,45 @@ class NativeOrderValidator
             'tax' => $tax,
             'base_tax' => $baseTax,
         ];
+    }
+
+    /**
+     * Resolve a durable tax basis without consulting mutable store config.
+     *
+     * Legacy native orders created before the tax-mode snapshot column can be
+     * proven from their own immutable subtotal/grand-total relationship.
+     */
+    private function resolvePricesIncludeTax(
+        OrderInterface $order,
+        ExchangeInterface $exchange
+    ): bool {
+        $frozen = $exchange->getCatalogPricesIncludeTax();
+        if ($frozen !== null) {
+            return $frozen;
+        }
+
+        $approved = $exchange->getReplacementAmount();
+        $matchesExclusive = $this->moneyMath->compare(
+            (string)$order->getSubtotal(),
+            $approved
+        ) === 0;
+        $matchesInclusive = $this->moneyMath->compare(
+            (string)$order->getGrandTotal(),
+            $approved
+        ) === 0;
+        if ($matchesExclusive xor $matchesInclusive) {
+            return $matchesInclusive;
+        }
+        if ($matchesExclusive && $matchesInclusive) {
+            return false;
+        }
+
+        throw new InvariantViolationException(
+            __(
+                'The legacy native replacement order tax basis cannot be '
+                . 'proven from its immutable totals.'
+            )
+        );
     }
 
     /**

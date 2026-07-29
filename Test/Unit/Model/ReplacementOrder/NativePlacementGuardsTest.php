@@ -48,6 +48,19 @@ class NativePlacementGuardsTest extends TestCase
             7,
             self::INTENT_HASH,
             static function () use ($context, $quote, $observer): void {
+                $context->setPreSubmitValidator(
+                    static function (Quote $candidate): void {
+                        unset($candidate);
+                    }
+                );
+                $context->setPrePlaceOrderValidator(
+                    static function (
+                        Quote $submittedQuote,
+                        OrderInterface $candidate
+                    ): void {
+                        unset($submittedQuote, $candidate);
+                    }
+                );
                 $context->markQuote($quote);
                 (new CopyReplacementOrderMarkers($context))->execute(
                     $observer
@@ -81,6 +94,19 @@ class NativePlacementGuardsTest extends TestCase
             7,
             self::INTENT_HASH,
             static function () use ($context, $quote, $order): void {
+                $context->setPreSubmitValidator(
+                    static function (Quote $candidate): void {
+                        unset($candidate);
+                    }
+                );
+                $context->setPrePlaceOrderValidator(
+                    static function (
+                        Quote $submittedQuote,
+                        OrderInterface $candidate
+                    ): void {
+                        unset($submittedQuote, $candidate);
+                    }
+                );
                 $context->markQuote($quote);
                 (new CopyReplacementOrderMarkers($context))->execute(
                     new Observer(['quote' => $quote, 'order' => $order])
@@ -146,6 +172,19 @@ class NativePlacementGuardsTest extends TestCase
             7,
             self::INTENT_HASH,
             static function () use ($context, $quote, $order): void {
+                $context->setPreSubmitValidator(
+                    static function (Quote $candidate): void {
+                        unset($candidate);
+                    }
+                );
+                $context->setPrePlaceOrderValidator(
+                    static function (
+                        Quote $submittedQuote,
+                        OrderInterface $candidate
+                    ): void {
+                        unset($submittedQuote, $candidate);
+                    }
+                );
                 $context->markQuote($quote);
                 (new CopyReplacementOrderMarkers($context))->execute(
                     new Observer(['quote' => $quote, 'order' => $order])
@@ -230,6 +269,80 @@ class NativePlacementGuardsTest extends TestCase
         self::assertSame(
             $pending['snapshot_hash'],
             $complete['snapshot_hash']
+        );
+    }
+
+    public function testTaxInclusiveCatalogPriceMatchesGrossNativeAmounts(): void
+    {
+        $snapshot = $this->validator()->snapshot(
+            $this->replacementOrder('100.0000', '14.0000'),
+            $this->originalOrder(),
+            $this->exchange('114.0000'),
+            [$this->replacementRow('114.0000')],
+            self::INTENT_HASH,
+            41
+        );
+
+        self::assertSame('114.0000', $snapshot['amount']);
+        self::assertSame('114.0000', $snapshot['expected_amount']);
+        self::assertSame([71 => 501], $snapshot['item_ids']);
+    }
+
+    public function testLegacyNativeFingerprintKeepsPreTaxSnapshotShape(): void
+    {
+        $order = $this->replacementOrder('100.0000', '14.0000');
+        $snapshot = $this->validator()->snapshot(
+            $order,
+            $this->originalOrder(),
+            $this->legacyExchange('100.0000'),
+            [$this->replacementRow('100.0000')],
+            self::INTENT_HASH,
+            41
+        );
+        $legacyFingerprint = [
+            'order' => [
+                'entity_id' => 200,
+                'increment_id' => '000000200',
+                'quote_id' => 41,
+                'exchange_id' => 7,
+                'intent_hash' => self::INTENT_HASH,
+                'store_id' => 1,
+                'customer_id' => 9,
+                'currency_code' => 'EGP',
+                'base_currency_code' => 'EGP',
+                'subtotal' => '100.0000',
+                'base_subtotal' => '100.0000',
+                'tax' => '14.0000',
+                'base_tax' => '14.0000',
+                'grand_total' => '114.0000',
+                'base_grand_total' => '114.0000',
+                'shipping_method' =>
+                    'bonlineco_sales_exchange_replacement',
+                'payment_method' => 'bonlineco_sales_exchange',
+            ],
+            'items' => [[
+                'replacement_item_id' => 71,
+                'order_item_id' => 501,
+                'product_id' => 21,
+                'sku' => 'replacement-sku',
+                'name' => 'Replacement',
+                'qty' => '1.0000',
+                'price' => '100.0000',
+                'base_price' => '100.0000',
+                'row_total' => '100.0000',
+                'base_row_total' => '100.0000',
+                'tax' => '14.0000',
+                'base_tax' => '14.0000',
+            ]],
+            'addresses' => [
+                'billing' => ['country_id' => 'EG'],
+                'shipping' => ['country_id' => 'EG'],
+            ],
+        ];
+
+        self::assertSame(
+            hash('sha256', (new Json())->serialize($legacyFingerprint)),
+            $snapshot['snapshot_hash']
         );
     }
 
@@ -431,7 +544,6 @@ class NativePlacementGuardsTest extends TestCase
             'billing' => ['country_id' => 'EG'],
             'shipping' => ['country_id' => 'EG'],
         ]);
-
         return new NativeOrderValidator(
             new DecimalMath(),
             new DecimalMath(4, 12),
@@ -451,6 +563,19 @@ class NativePlacementGuardsTest extends TestCase
             ->setBaseCurrencyCode('EGP')
             ->setReplacementAmount($amount)
             ->setShippingAmount('0.0000');
+        if ($amount === '114.0000') {
+            $exchange->setCatalogPricesIncludeTax(true);
+        } else {
+            $exchange->setCatalogPricesIncludeTax(false);
+        }
+
+        return $exchange;
+    }
+
+    private function legacyExchange(string $amount): ExchangeInterface
+    {
+        $exchange = $this->exchange($amount);
+        $exchange->setCatalogPricesIncludeTax(null);
 
         return $exchange;
     }
@@ -494,6 +619,10 @@ class NativePlacementGuardsTest extends TestCase
         $payment = $this->modelWithoutConstructor(Payment::class);
         $payment->setMethod('bonlineco_sales_exchange');
         $grandTotal = bcadd($subtotal, $tax, 4);
+        $item->setPriceInclTax($grandTotal)
+            ->setBasePriceInclTax($grandTotal)
+            ->setRowTotalInclTax($grandTotal)
+            ->setBaseRowTotalInclTax($grandTotal);
         $order->setEntityId(200)
             ->setIncrementId('000000200')
             ->setQuoteId(41)

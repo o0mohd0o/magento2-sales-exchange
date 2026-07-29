@@ -8,6 +8,7 @@
             "customer_id": true,
             "currency_code": true,
             "base_currency_code": true,
+            "catalog_prices_include_tax": true,
             "exchange_status": true,
             "return_status": true,
             "replacement_status": true,

@@ -79,25 +79,33 @@ class IntentHasher
             ];
         }
 
+        $exchangeSnapshot = [
+            'entity_id' => $exchange->getEntityId(),
+            'increment_id' => $exchange->getIncrementId(),
+            'original_order_id' => $exchange->getOriginalOrderId(),
+            'store_id' => $exchange->getStoreId(),
+            'customer_id' => $exchange->getCustomerId(),
+            'currency_code' => $exchange->getCurrencyCode(),
+            'base_currency_code' => $exchange->getBaseCurrencyCode(),
+        ];
+        $catalogPricesIncludeTax = $exchange
+            ->getCatalogPricesIncludeTax();
+        if ($catalogPricesIncludeTax !== null) {
+            $exchangeSnapshot['catalog_prices_include_tax'] =
+                $catalogPricesIncludeTax;
+        }
+        $exchangeSnapshot['replacement_amount'] = $this->moneyMath->normalize(
+            $exchange->getReplacementAmount()
+        );
+        $exchangeSnapshot['shipping_amount'] = $this->moneyMath->normalize(
+            $exchange->getShippingAmount()
+        );
+        $exchangeSnapshot['fee_amount'] = $this->moneyMath->normalize(
+            $exchange->getFeeAmount()
+        );
+
         $snapshot = [
-            'exchange' => [
-                'entity_id' => $exchange->getEntityId(),
-                'increment_id' => $exchange->getIncrementId(),
-                'original_order_id' => $exchange->getOriginalOrderId(),
-                'store_id' => $exchange->getStoreId(),
-                'customer_id' => $exchange->getCustomerId(),
-                'currency_code' => $exchange->getCurrencyCode(),
-                'base_currency_code' => $exchange->getBaseCurrencyCode(),
-                'replacement_amount' => $this->moneyMath->normalize(
-                    $exchange->getReplacementAmount()
-                ),
-                'shipping_amount' => $this->moneyMath->normalize(
-                    $exchange->getShippingAmount()
-                ),
-                'fee_amount' => $this->moneyMath->normalize(
-                    $exchange->getFeeAmount()
-                ),
-            ],
+            'exchange' => $exchangeSnapshot,
             'replacement_items' => $items,
         ];
 

@@ -10,6 +10,7 @@ namespace Bonlineco\SalesExchange\Model\ReplacementOrder;
 
 use Bonlineco\SalesExchange\Api\Data\ExchangeInterface;
 use Bonlineco\SalesExchange\Exception\InvariantViolationException;
+use Bonlineco\SalesExchange\Model\Order\FreshOrderLoader;
 use Bonlineco\SalesExchange\Model\Payment\Replacement as ReplacementPayment;
 use Magento\Quote\Api\CartManagementInterface;
 use Magento\Quote\Api\CartRepositoryInterface;
@@ -17,6 +18,7 @@ use Magento\Quote\Api\Data\PaymentInterfaceFactory;
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\ResourceModel\Quote as QuoteResource;
 use Magento\Sales\Api\Data\OrderInterface;
+use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 
 /**
  * Place one isolated quote through Magento's public checkout service.
@@ -39,13 +41,25 @@ class NativeOrderPlacer
 
     private QuoteResource $quoteResource;
 
+    private OrderResource $orderResource;
+
+    private FreshOrderLoader $freshOrderLoader;
+
+    private ConvertedOrderValidator $convertedOrderValidator;
+
+    private NativeOrderValidator $nativeOrderValidator;
+
     public function __construct(
         ExecutionContext $executionContext,
         QuoteValidator $quoteValidator,
         CartManagementInterface $cartManagement,
         CartRepositoryInterface $quoteRepository,
         PaymentInterfaceFactory $paymentFactory,
-        QuoteResource $quoteResource
+        QuoteResource $quoteResource,
+        OrderResource $orderResource,
+        FreshOrderLoader $freshOrderLoader,
+        ConvertedOrderValidator $convertedOrderValidator,
+        NativeOrderValidator $nativeOrderValidator
     ) {
         $this->executionContext = $executionContext;
         $this->quoteValidator = $quoteValidator;
@@ -53,6 +67,10 @@ class NativeOrderPlacer
         $this->quoteRepository = $quoteRepository;
         $this->paymentFactory = $paymentFactory;
         $this->quoteResource = $quoteResource;
+        $this->orderResource = $orderResource;
+        $this->freshOrderLoader = $freshOrderLoader;
+        $this->convertedOrderValidator = $convertedOrderValidator;
+        $this->nativeOrderValidator = $nativeOrderValidator;
     }
 
     /**
@@ -84,14 +102,69 @@ class NativeOrderPlacer
             $intentHash,
             function () use (
                 $quote,
+                $originalOrder,
                 $exchange,
+                $replacementRows,
                 $quoteId,
                 $intentHash
             ): int {
+                $this->executionContext->setPreSubmitValidator(
+                    function (Quote $candidate) use (
+                        $originalOrder,
+                        $exchange,
+                        $replacementRows,
+                        $intentHash
+                    ): void {
+                        $this->quoteValidator->assertPrepared(
+                            $candidate,
+                            $originalOrder,
+                            $exchange,
+                            $replacementRows,
+                            $intentHash,
+                            true
+                        );
+                    }
+                );
+                $this->executionContext->setPrePlaceOrderValidator(
+                    function (
+                        Quote $submittedQuote,
+                        OrderInterface $candidate
+                    ): void {
+                        $this->convertedOrderValidator->execute(
+                            $submittedQuote,
+                            $candidate
+                        );
+                    }
+                );
+                $this->executionContext->setPostSaveOrderValidator(
+                    function (OrderInterface $candidate) use (
+                        $originalOrder,
+                        $exchange,
+                        $replacementRows,
+                        $intentHash,
+                        $quoteId
+                    ): string {
+                        $snapshot = $this->nativeOrderValidator->snapshot(
+                            $candidate,
+                            $originalOrder,
+                            $exchange,
+                            $replacementRows,
+                            $intentHash,
+                            $quoteId
+                        );
+
+                        return $snapshot['snapshot_hash'];
+                    }
+                );
                 $this->executionContext->markQuote($quote);
                 $payment = $this->paymentFactory->create();
                 $payment->setMethod(ReplacementPayment::CODE);
                 $connection = $this->quoteResource->getConnection();
+                if ($connection !== $this->orderResource->getConnection()) {
+                    throw new InvariantViolationException(
+                        __('Replacement quotes and orders must share one database transaction.')
+                    );
+                }
                 $connection->beginTransaction();
                 try {
                     $quote->setIsActive(true);
@@ -106,6 +179,13 @@ class NativeOrderPlacer
                             __('Magento did not return a native replacement order.')
                         );
                     }
+                    $persistedOrder = $this->freshOrderLoader->execute(
+                        $orderId
+                    );
+                    $this->executionContext->validateBeforeCommit(
+                        $orderId,
+                        $persistedOrder
+                    );
                     $this->assertDurableInactiveQuote(
                         $quoteId,
                         (int)$exchange->getEntityId(),
@@ -121,7 +201,8 @@ class NativeOrderPlacer
                 } finally {
                     $quote->setIsActive(false);
                 }
-            }
+            },
+            $replacementRows
         );
     }
 

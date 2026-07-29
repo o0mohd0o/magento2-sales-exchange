@@ -24,6 +24,8 @@
                 comment="Original Order Currency Code Snapshot"/>
         <column xsi:type="varchar" name="base_currency_code" nullable="false" length="3"
                 comment="Original Order Base Currency Code Snapshot"/>
+        <column xsi:type="boolean" name="catalog_prices_include_tax" nullable="true"
+                comment="Catalog Price Tax Mode Snapshot"/>
         <column xsi:type="varchar" name="exchange_status" nullable="false" length="32" default="draft"
                 comment="Exchange Workflow Status"/>
         <column xsi:type="varchar" name="return_status" nullable="false" length="32" default="pending"
