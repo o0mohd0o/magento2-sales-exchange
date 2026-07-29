@@ -402,7 +402,7 @@ Repository CI defines PHP 8.1-8.5 syntax gates, Composer/archive validation,
 XML, JSON, JavaScript, secret-history scanning, Magento-version-specific unit
 and integration tests, Magento coding standard, and DI compilation.
 
-At this source state, local evidence comprises 386 passing unit tests with 1,046
+At this source state, local evidence comprises 386 passing unit tests with 1,048
 assertions on PHPUnit 10.5, with cross-version PHPUnit 9/10/12 provider
 metadata; module PHP lint and Magento coding-standard checks; six focused
 Magento Open Source 2.4.8 integration tests with 29

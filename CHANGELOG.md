@@ -20,6 +20,9 @@ No unreleased changes.
 - Validate converted order addresses using Magento's order-level customer email
   without requiring its unmapped address-level customer ID, while preserving
   the existing durable fingerprint fields.
+- Use the order-level customer email for both prepared quote addresses, matching
+  Magento's native new-quote normalization when a historical address email
+  differs from the order header.
 
 ## [0.2.0] - 2026-07-29
 

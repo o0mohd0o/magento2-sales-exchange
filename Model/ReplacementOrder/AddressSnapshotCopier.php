@@ -94,9 +94,10 @@ class AddressSnapshotCopier
         OrderAddressInterface $source,
         QuoteAddress $target,
         ?int $customerId,
-        string $fallbackEmail
+        string $orderEmail
     ): void {
-        $email = trim((string)$source->getEmail());
+        // Magento treats the quote customer email as canonical while saving
+        // and converting addresses, even when an order-address email differs.
         $target->setPrefix($source->getPrefix())
             ->setFirstname($source->getFirstname())
             ->setMiddlename($source->getMiddlename())
@@ -113,7 +114,7 @@ class AddressSnapshotCopier
             ->setTelephone($source->getTelephone())
             ->setFax($source->getFax())
             ->setVatId($source->getVatId())
-            ->setEmail($email === '' ? $fallbackEmail : $email)
+            ->setEmail($orderEmail)
             ->setCustomerId($customerId)
             ->setCustomerAddressId(null)
             ->setSaveInAddressBook(false);
@@ -168,10 +169,8 @@ class AddressSnapshotCopier
         OrderAddressInterface $source,
         QuoteAddress $target,
         ?int $customerId,
-        string $fallbackEmail
+        string $orderEmail
     ): void {
-        $sourceEmail = trim((string)$source->getEmail());
-        $expectedEmail = $sourceEmail === '' ? $fallbackEmail : $sourceEmail;
         $targetCustomerId = $target->getCustomerId();
         $targetCustomerId = $targetCustomerId === null
             ? null
@@ -197,7 +196,7 @@ class AddressSnapshotCopier
                 === $this->nullableString($target->getFax())
             && $this->nullableString($source->getVatId())
                 === $this->nullableString($target->getVatId())
-            && $expectedEmail === (string)$target->getEmail()
+            && $orderEmail === (string)$target->getEmail()
             && $targetCustomerId === $customerId
             && !$target->getCustomerAddressId()
             && !(bool)$target->getSaveInAddressBook();

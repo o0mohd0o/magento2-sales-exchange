@@ -266,8 +266,22 @@ class HelpersTest extends TestCase
 
     public function testAddressCopyUsesOrderSnapshotsWithoutAddressBookLinks(): void
     {
-        $billingSource = $this->orderAddress('billing', 'Cairo');
-        $shippingSource = $this->orderAddress('shipping', 'Giza');
+        $billingSource = $this->orderAddress(
+            'billing',
+            'Cairo',
+            'Cairo',
+            null,
+            null,
+            'historical-billing@example.com'
+        );
+        $shippingSource = $this->orderAddress(
+            'shipping',
+            'Giza',
+            'Cairo',
+            null,
+            null,
+            'historical-shipping@example.com'
+        );
         $searchResult = $this->createMock(
             OrderAddressSearchResultInterface::class
         );
@@ -307,6 +321,8 @@ class HelpersTest extends TestCase
 
         self::assertSame('Cairo', $billingTarget->getCity());
         self::assertSame('Giza', $shippingTarget->getCity());
+        self::assertSame('order@example.com', $billingTarget->getEmail());
+        self::assertSame('order@example.com', $shippingTarget->getEmail());
         self::assertSame(7, (int)$shippingTarget->getCustomerId());
         self::assertNull($shippingTarget->getCustomerAddressId());
         self::assertFalse((bool)$shippingTarget->getSaveInAddressBook());
@@ -516,7 +532,8 @@ class HelpersTest extends TestCase
         string $city,
         string $region = 'Cairo',
         ?int $regionId = null,
-        ?string $regionCode = null
+        ?string $regionCode = null,
+        ?string $email = null
     ): OrderAddressInterface {
         $address = $this->createMock(OrderAddressInterface::class);
         $address->method('getAddressType')->willReturn($type);
@@ -536,7 +553,7 @@ class HelpersTest extends TestCase
         $address->method('getTelephone')->willReturn('01000000000');
         $address->method('getFax')->willReturn(null);
         $address->method('getVatId')->willReturn(null);
-        $address->method('getEmail')->willReturn(null);
+        $address->method('getEmail')->willReturn($email);
 
         return $address;
     }
