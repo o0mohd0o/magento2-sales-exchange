@@ -44,22 +44,17 @@ class NativeOrderAddressValidator
     ): array {
         $source = $this->resolve($originalOrder);
         $target = $this->resolve($replacementOrder);
-        $customerId = $originalOrder->getCustomerId() === null
-            ? null
-            : (int)$originalOrder->getCustomerId();
         $fallbackEmail = (string)$originalOrder->getCustomerEmail();
 
         return [
             'billing' => $this->compare(
                 $source['billing'],
                 $target['billing'],
-                $customerId,
                 $fallbackEmail
             ),
             'shipping' => $this->compare(
                 $source['shipping'],
                 $target['shipping'],
-                $customerId,
                 $fallbackEmail
             ),
         ];
@@ -116,10 +111,10 @@ class NativeOrderAddressValidator
     private function compare(
         OrderAddressInterface $source,
         OrderAddressInterface $target,
-        ?int $customerId,
         string $fallbackEmail
     ): array {
-        $sourceEmail = trim((string)$source->getEmail());
+        $sourceRegionId = $this->nullableInt($source->getRegionId());
+        $targetRegionId = $this->nullableInt($target->getRegionId());
         $expected = [
             'prefix' => $this->nullableString($source->getPrefix()),
             'firstname' => (string)$source->getFirstname(),
@@ -130,15 +125,15 @@ class NativeOrderAddressValidator
             'street' => array_values($source->getStreet() ?? []),
             'city' => (string)$source->getCity(),
             'region' => $this->nullableString($source->getRegion()),
-            'region_id' => $this->nullableInt($source->getRegionId()),
+            'region_id' => $sourceRegionId,
             'region_code' => $this->nullableString($source->getRegionCode()),
             'postcode' => (string)$source->getPostcode(),
             'country_id' => (string)$source->getCountryId(),
             'telephone' => (string)$source->getTelephone(),
             'fax' => $this->nullableString($source->getFax()),
             'vat_id' => $this->nullableString($source->getVatId()),
-            'email' => $sourceEmail === '' ? $fallbackEmail : $sourceEmail,
-            'customer_id' => $customerId,
+            'email' => $fallbackEmail,
+            'customer_id' => $this->nullableInt($source->getCustomerId()),
             'customer_address_id' => null,
         ];
         $actual = [
@@ -151,7 +146,7 @@ class NativeOrderAddressValidator
             'street' => array_values($target->getStreet() ?? []),
             'city' => (string)$target->getCity(),
             'region' => $this->nullableString($target->getRegion()),
-            'region_id' => $this->nullableInt($target->getRegionId()),
+            'region_id' => $targetRegionId,
             'region_code' => $this->nullableString($target->getRegionCode()),
             'postcode' => (string)$target->getPostcode(),
             'country_id' => (string)$target->getCountryId(),
@@ -164,7 +159,23 @@ class NativeOrderAddressValidator
                 $target->getCustomerAddressId()
             ),
         ];
-        if ($actual !== $expected) {
+        $expectedForComparison = $expected;
+        $actualForComparison = $actual;
+        // Keep legacy fingerprint fields, but do not treat Magento-derived
+        // region codes or unmapped address-level customer IDs as snapshots.
+        unset(
+            $expectedForComparison['region_code'],
+            $actualForComparison['region_code'],
+            $expectedForComparison['customer_id'],
+            $actualForComparison['customer_id']
+        );
+        if ($sourceRegionId !== null || $targetRegionId !== null) {
+            unset(
+                $expectedForComparison['region'],
+                $actualForComparison['region']
+            );
+        }
+        if ($actualForComparison !== $expectedForComparison) {
             throw new InvariantViolationException(
                 __('A final replacement order address drifted from the original order snapshot.')
             );

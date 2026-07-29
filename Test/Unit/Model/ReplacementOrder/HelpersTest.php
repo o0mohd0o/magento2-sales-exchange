@@ -312,6 +312,106 @@ class HelpersTest extends TestCase
         self::assertFalse((bool)$shippingTarget->getSaveInAddressBook());
     }
 
+    public function testAddressMatchUsesRegionIdInsteadOfLocalizedLabel(): void
+    {
+        $billingSource = $this->orderAddress(
+            'billing',
+            'Cairo',
+            'القاهرة',
+            2437,
+            'Cairo'
+        );
+        $shippingSource = $this->orderAddress(
+            'shipping',
+            'Giza',
+            'القاهرة',
+            2437,
+            'Cairo'
+        );
+        $searchResult = $this->createMock(
+            OrderAddressSearchResultInterface::class
+        );
+        $searchResult->method('getItems')
+            ->willReturn([$billingSource, $shippingSource]);
+        $repository = $this->createMock(
+            OrderAddressRepositoryInterface::class
+        );
+        $repository->method('getList')->willReturn($searchResult);
+        $criteria = $this->createMock(SearchCriteriaInterface::class);
+        $builder = $this->createMock(SearchCriteriaBuilder::class);
+        $builder->method('addFilter')->willReturnSelf();
+        $builder->method('setPageSize')->willReturnSelf();
+        $builder->method('create')->willReturn($criteria);
+        $builderFactory = $this->createMock(
+            SearchCriteriaBuilderFactory::class
+        );
+        $builderFactory->method('create')->willReturn($builder);
+        $billingTarget = $this->quoteAddress();
+        $shippingTarget = $this->quoteAddress();
+        $quote = $this->getMockBuilder(Quote::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getBillingAddress', 'getShippingAddress'])
+            ->getMock();
+        $quote->method('getBillingAddress')->willReturn($billingTarget);
+        $quote->method('getShippingAddress')->willReturn($shippingTarget);
+        $order = $this->createMock(OrderInterface::class);
+        $order->method('getEntityId')->willReturn(50);
+        $order->method('getCustomerId')->willReturn(7);
+        $order->method('getCustomerEmail')->willReturn('order@example.com');
+        $copier = new AddressSnapshotCopier($repository, $builderFactory);
+
+        $copier->execute($order, $quote);
+        $billingTarget->setData('region', 'Cairo');
+        $shippingTarget->setData('region', 'Cairo');
+        $shippingTarget->setSameAsBilling(1);
+
+        $copier->assertMatches($order, $quote);
+
+        self::assertSame('Cairo', $billingTarget->getRegion());
+        self::assertSame('Cairo', $shippingTarget->getRegion());
+    }
+
+    public function testAddressCopyRejectsSameQuoteAddressInstance(): void
+    {
+        $searchResult = $this->createMock(
+            OrderAddressSearchResultInterface::class
+        );
+        $searchResult->method('getItems')->willReturn([
+            $this->orderAddress('billing', 'Cairo'),
+            $this->orderAddress('shipping', 'Giza'),
+        ]);
+        $repository = $this->createMock(
+            OrderAddressRepositoryInterface::class
+        );
+        $repository->method('getList')->willReturn($searchResult);
+        $criteria = $this->createMock(SearchCriteriaInterface::class);
+        $builder = $this->createMock(SearchCriteriaBuilder::class);
+        $builder->method('addFilter')->willReturnSelf();
+        $builder->method('setPageSize')->willReturnSelf();
+        $builder->method('create')->willReturn($criteria);
+        $builderFactory = $this->createMock(
+            SearchCriteriaBuilderFactory::class
+        );
+        $builderFactory->method('create')->willReturn($builder);
+        $sharedAddress = $this->quoteAddress();
+        $quote = $this->getMockBuilder(Quote::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getBillingAddress', 'getShippingAddress'])
+            ->getMock();
+        $quote->method('getBillingAddress')->willReturn($sharedAddress);
+        $quote->method('getShippingAddress')->willReturn($sharedAddress);
+        $order = $this->createMock(OrderInterface::class);
+        $order->method('getEntityId')->willReturn(50);
+        $order->method('getCustomerId')->willReturn(7);
+        $order->method('getCustomerEmail')->willReturn('order@example.com');
+        $this->expectException(InvariantViolationException::class);
+
+        (new AddressSnapshotCopier($repository, $builderFactory))->execute(
+            $order,
+            $quote
+        );
+    }
+
     public function testQuotePreparerDoesNotDependOnCustomerActiveCartApi(): void
     {
         $constructor = new \ReflectionMethod(QuotePreparer::class, '__construct');
@@ -413,7 +513,10 @@ class HelpersTest extends TestCase
 
     private function orderAddress(
         string $type,
-        string $city
+        string $city,
+        string $region = 'Cairo',
+        ?int $regionId = null,
+        ?string $regionCode = null
     ): OrderAddressInterface {
         $address = $this->createMock(OrderAddressInterface::class);
         $address->method('getAddressType')->willReturn($type);
@@ -425,9 +528,9 @@ class HelpersTest extends TestCase
         $address->method('getCompany')->willReturn(null);
         $address->method('getStreet')->willReturn(['1 Main Street']);
         $address->method('getCity')->willReturn($city);
-        $address->method('getRegion')->willReturn('Cairo');
-        $address->method('getRegionId')->willReturn(null);
-        $address->method('getRegionCode')->willReturn(null);
+        $address->method('getRegion')->willReturn($region);
+        $address->method('getRegionId')->willReturn($regionId);
+        $address->method('getRegionCode')->willReturn($regionCode);
         $address->method('getPostcode')->willReturn('11511');
         $address->method('getCountryId')->willReturn('EG');
         $address->method('getTelephone')->willReturn('01000000000');
@@ -442,10 +545,17 @@ class HelpersTest extends TestCase
     {
         $address = $this->getMockBuilder(QuoteAddress::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['getRegionId', 'getRegionCode'])
+            ->onlyMethods(['getRegion', 'getRegionId', 'getRegionCode'])
             ->getMock();
-        $address->method('getRegionId')->willReturn(null);
-        $address->method('getRegionCode')->willReturn(null);
+        $address->method('getRegion')->willReturnCallback(
+            static fn () => $address->getData('region')
+        );
+        $address->method('getRegionId')->willReturnCallback(
+            static fn () => $address->getData('region_id')
+        );
+        $address->method('getRegionCode')->willReturnCallback(
+            static fn () => $address->getData('region_code')
+        );
 
         return $address;
     }

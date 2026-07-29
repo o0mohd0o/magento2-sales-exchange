@@ -8,6 +8,19 @@ All notable changes to this project are documented here. The project follows
 
 No unreleased changes.
 
+## [0.2.1] - 2026-07-29
+
+### Fixed
+
+- Compare registered regions by stable region and country identifiers instead
+  of locale-dependent display labels, preventing valid order snapshots from
+  drifting when an administrator uses a different interface locale.
+- Accept Magento's native `same_as_billing` normalization while continuing to
+  require separate, fully validated billing and shipping address objects.
+- Validate converted order addresses using Magento's order-level customer email
+  without requiring its unmapped address-level customer ID, while preserving
+  the existing durable fingerprint fields.
+
 ## [0.2.0] - 2026-07-29
 
 ### Added
@@ -108,7 +121,8 @@ No unreleased changes.
   document fingerprints and delivery proofs, and fail-closed handling of
   unsupported totals, partial shipments, and replacement refunds.
 
-[Unreleased]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/o0mohd0o/magento2-sales-exchange/compare/v0.1.1...v0.1.2

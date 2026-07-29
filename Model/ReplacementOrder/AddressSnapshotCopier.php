@@ -38,19 +38,22 @@ class AddressSnapshotCopier
     {
         $byType = $this->resolve($order);
         $customerId = $order->getCustomerId();
+        $billingAddress = $quote->getBillingAddress();
+        $shippingAddress = $quote->getShippingAddress();
+        $this->assertDistinctAddresses($billingAddress, $shippingAddress);
         $this->copy(
             $byType['billing'],
-            $quote->getBillingAddress(),
+            $billingAddress,
             $customerId === null ? null : (int)$customerId,
             (string)$order->getCustomerEmail()
         );
         $this->copy(
             $byType['shipping'],
-            $quote->getShippingAddress(),
+            $shippingAddress,
             $customerId === null ? null : (int)$customerId,
             (string)$order->getCustomerEmail()
         );
-        $quote->getShippingAddress()->setSameAsBilling(false);
+        $shippingAddress->setSameAsBilling(false);
     }
 
     public function assertMatches(OrderInterface $order, Quote $quote): void
@@ -59,19 +62,28 @@ class AddressSnapshotCopier
         $customerId = $order->getCustomerId();
         $customerId = $customerId === null ? null : (int)$customerId;
         $email = (string)$order->getCustomerEmail();
+        $billingAddress = $quote->getBillingAddress();
+        $shippingAddress = $quote->getShippingAddress();
+        $this->assertDistinctAddresses($billingAddress, $shippingAddress);
         $this->assertAddressMatches(
             $byType['billing'],
-            $quote->getBillingAddress(),
+            $billingAddress,
             $customerId,
             $email
         );
         $this->assertAddressMatches(
             $byType['shipping'],
-            $quote->getShippingAddress(),
+            $shippingAddress,
             $customerId,
             $email
         );
-        if ((bool)$quote->getShippingAddress()->getSameAsBilling()) {
+    }
+
+    private function assertDistinctAddresses(
+        QuoteAddress $billingAddress,
+        QuoteAddress $shippingAddress
+    ): void {
+        if ($billingAddress === $shippingAddress) {
             throw new InvariantViolationException(
                 __('The replacement shipping snapshot cannot alias its billing address.')
             );
@@ -177,12 +189,7 @@ class AddressSnapshotCopier
             && array_values($source->getStreet() ?? [])
                 === array_values($target->getStreet())
             && (string)$source->getCity() === (string)$target->getCity()
-            && $this->nullableString($source->getRegion())
-                === $this->nullableString($target->getRegion())
-            && $this->nullableInt($source->getRegionId())
-                === $this->nullableInt($target->getRegionId())
-            && $this->nullableString($source->getRegionCode())
-                === $this->nullableString($target->getRegionCode())
+            && $this->regionMatches($source, $target)
             && (string)$source->getPostcode() === (string)$target->getPostcode()
             && (string)$source->getCountryId() === (string)$target->getCountryId()
             && (string)$source->getTelephone() === (string)$target->getTelephone()
@@ -199,6 +206,20 @@ class AddressSnapshotCopier
                 __('A prepared quote address drifted from the original order snapshot.')
             );
         }
+    }
+
+    private function regionMatches(
+        OrderAddressInterface $source,
+        QuoteAddress $target
+    ): bool {
+        $sourceRegionId = $this->nullableInt($source->getRegionId());
+        $targetRegionId = $this->nullableInt($target->getRegionId());
+        if ($sourceRegionId !== null || $targetRegionId !== null) {
+            return $sourceRegionId === $targetRegionId;
+        }
+
+        return $this->nullableString($source->getRegion())
+            === $this->nullableString($target->getRegion());
     }
 
     /**
